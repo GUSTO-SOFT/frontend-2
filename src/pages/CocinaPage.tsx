@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { cocinaService } from "../services/cocinaService";
 import type { Pedido } from "../types";
+import { Toast } from "../components/Toast";
+
 
 export function CocinaPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+
 
   const fetchPedidos = async () => {
     try {
@@ -37,9 +41,12 @@ export function CocinaPage() {
       await cocinaService.updateEstadoPedido(id, nuevoEstado);
       await fetchPedidos();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Error al actualizar pedido");
+      const msg = err.response?.data?.message || "Error al actualizar pedido";
+      setToast({ message: msg, type: "error" });
+      setTimeout(() => setToast(null), 5000);
     }
   };
+
 
   return (
     <div className="app-shell">
@@ -130,6 +137,7 @@ export function CocinaPage() {
           </div>
         )}
         </div>
+        {toast && <Toast message={toast.message} type={toast.type} />}
       </main>
     </div>
   );
