@@ -75,3 +75,43 @@ export type ApiErrorBody = {
   message?: string | string[];
   statusCode?: number;
 };
+
+export type CategoriaProducto =
+  | "ENTRADA"
+  | "PLATO_FUERTE"
+  | "POSTRE"
+  | "BEBIDA"
+  | "OTRO";
+
+export type Producto = {
+  id: number;
+  nombre: string;
+  categoria: CategoriaProducto;
+  precio: string;
+  tiempoPreparacion: number;
+  activo: boolean;
+};
+
+export type PedidoEstado =
+  | "PENDIENTE"
+  | "EN_PREPARACION"
+  | "LISTO"
+  | "ENTREGADO"
+  | "CANCELADO";
+
+export type PedidoDetalle = {
+  id: number;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario: string;
+};
+
+export type Pedido = {
+  id: number;
+  mesa_id: number;
+  mesero_id: number;
+  estado: PedidoEstado;
+  detalles: PedidoDetalle[];
+  created_at: string;
+  updated_at: string;
+};
