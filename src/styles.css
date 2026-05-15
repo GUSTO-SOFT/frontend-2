@@ -782,6 +782,138 @@ button {
   box-shadow: 0 0 0 3px rgba(209, 20, 31, 0.12);
 }
 
+.cantidad-input--error {
+  border-color: #f97066;
+  background: #fffbfa;
+}
+
+.cantidad-input-wrapper {
+  display: grid;
+  gap: 4px;
+}
+
+.inline-error {
+  color: #b42318;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.detalle-row--pedido {
+  align-items: start;
+}
+
+.detalle-producto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detalle-row--pedido .detalle-producto {
+  overflow: visible;
+  text-overflow: initial;
+  white-space: normal;
+  display: grid;
+  gap: 10px;
+}
+
+.notas-input {
+  display: grid;
+  gap: 6px;
+}
+
+.notas-input__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.notas-input__label {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.notas-input__field {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.notas-input__field:focus {
+  border-color: #d1141f;
+  box-shadow: 0 0 0 3px rgba(209, 20, 31, 0.12);
+}
+
+.notas-input__field--error {
+  border-color: #f97066;
+  background: #fffbfa;
+}
+
+.char-counter {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #667085;
+}
+
+.char-counter--limit {
+  color: #b42318;
+}
+
+.nota-especial {
+  color: #475467;
+  font-style: italic;
+  font-size: 0.92rem;
+}
+
+.detalle-en-pedido {
+  text-align: center;
+  font-weight: 800;
+  color: #667085;
+}
+
+.accion-linea {
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.accion-linea--agregar {
+  border: 1px solid #abefc6;
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.accion-linea:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.catalogo-actions {
+  display: flex;
+}
+
+.catalogo-search {
+  margin: 0;
+  width: 100%;
+}
+
+.guardar-pedido-btn {
+  min-width: 200px;
+}
+
 .quitar-linea {
   min-height: 36px;
   width: 36px;

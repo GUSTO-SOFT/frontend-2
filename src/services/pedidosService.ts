@@ -4,6 +4,7 @@ import type { Pedido } from "../types";
 type DetallePedido = {
   producto_id: number;
   cantidad: number;
+  notas?: string | null;
 };
 
 type CrearPedidoBody = {
@@ -25,3 +26,13 @@ export async function updateEstadoPedido(id: number, estado: string) {
   const { data } = await api.patch<Pedido>(`/pedidos/${id}/estado`, { estado });
   return data;
 }
+
+type ActualizarDetallesPedidoBody = {
+  detalles: DetallePedido[];
+};
+
+export async function actualizarDetallesPedido(id: number, body: ActualizarDetallesPedidoBody) {
+  const { data } = await api.patch<Pedido>(`/pedidos/${id}/detalles`, body);
+  return data;
+}
+
