@@ -20,3 +20,12 @@ export async function getPedido(id: number) {
   const { data } = await api.get<Pedido>(`/pedidos/${id}`);
   return data;
 }
+
+type ActualizarDetallesPedidoBody = {
+  detalles: DetallePedido[];
+};
+
+export async function actualizarDetallesPedido(id: number, body: ActualizarDetallesPedidoBody) {
+  const { data } = await api.patch<Pedido>(`/pedidos/${id}/detalles`, body);
+  return data;
+}
