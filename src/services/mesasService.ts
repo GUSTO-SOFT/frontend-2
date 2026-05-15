@@ -16,3 +16,8 @@ export async function abrirMesa(id: number) {
   const { data } = await api.post<Mesa>(`/mesas/${id}/abrir`);
   return data;
 }
+
+export async function asignarMesero(id: number, mesero_id: number) {
+  const { data } = await api.patch<Mesa>(`/mesas/${id}/asignar`, { mesero_id });
+  return data;
+}
