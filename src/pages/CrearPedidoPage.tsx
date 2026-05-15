@@ -1,10 +1,11 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { Toast } from "../components/Toast";
 import { Sidebar } from "../components/Sidebar";
+import { Toast } from "../components/Toast";
 import { getProductosActivos } from "../services/menuService";
 import { crearPedido } from "../services/pedidosService";
+import { formatCurrency } from "../utils/format";
 import type { ApiErrorBody, Mesa, Producto } from "../types";
 
 type Props = {
@@ -28,16 +29,16 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
 
-  // Guard de rol — solo MESERO o ADMIN
   const tieneAcceso = rol === "MESERO" || rol === "ADMIN";
+  const mesaActiva = mesa.estado === "OCUPADA";
 
   useEffect(() => {
     void (async () => {
       try {
         const data = await getProductosActivos();
-        setProductos(data);
+        setProductos(data.filter((producto) => producto.activo));
       } catch {
-        mostrarToast("No se pudo cargar el catálogo de productos.", "error");
+        mostrarToast("No se pudo cargar el catalogo de productos.", "error");
       } finally {
         setLoadingProductos(false);
       }
@@ -46,9 +47,13 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
 
   useEffect(() => {
     if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 3500);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(timer);
   }, [toast]);
+
+  const productosById = useMemo(() => {
+    return new Map(productos.map((producto) => [producto.id, producto]));
+  }, [productos]);
 
   function mostrarToast(message: string, type: "error" | "success" = "error") {
     setToast({ message, type });
@@ -69,7 +74,14 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
   }
 
   async function handleCrearPedido() {
-    const lineasValidas = detalles.filter((d) => d.producto_id !== 0 && d.cantidad > 0);
+    if (!mesaActiva) {
+      mostrarToast("La mesa no esta activa, abre la mesa primero");
+      return;
+    }
+
+    const lineasValidas = detalles.filter((detalle) => (
+      detalle.producto_id > 0 && detalle.cantidad > 0
+    ));
 
     if (lineasValidas.length === 0) {
       mostrarToast("Agrega al menos un producto antes de crear el pedido.");
@@ -84,22 +96,22 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
         detalles: lineasValidas,
       });
       mostrarToast("Pedido creado correctamente.", "success");
-      setTimeout(() => onPedidoCreado(pedido.id), 1000);
+      window.setTimeout(() => onPedidoCreado(pedido.id), 700);
     } catch (error) {
       if (axios.isAxiosError<ApiErrorBody>(error)) {
         const code = error.response?.data?.error;
         const status = error.response?.status;
 
         if (code === "MESA_NO_ACTIVA") {
-          mostrarToast("La mesa no esta activa, abre la mesa primero.");
+          mostrarToast("La mesa no esta activa, abre la mesa primero");
           return;
         }
         if (code === "PRODUCTO_NO_DISPONIBLE") {
-          mostrarToast("Uno o más productos no están disponibles.");
+          mostrarToast("Uno o mas productos no estan disponibles");
           return;
         }
         if (status === 403) {
-          mostrarToast("No tienes permisos para realizar esta acción.");
+          mostrarToast("No tienes permisos para crear pedidos.");
           return;
         }
       }
@@ -115,11 +127,11 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
 
       <main className="main-panel">
         <header className="topbar">
-          <h1>Nuevo Pedido — Mesa {mesa.numero}</h1>
+          <h1>Nuevo Pedido - Mesa {mesa.numero}</h1>
           <div />
           <div className="session-user">
             <button type="button" className="secondary-button" onClick={onVolver}>
-              ← Volver
+              Volver
             </button>
           </div>
         </header>
@@ -132,7 +144,6 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
             </div>
           ) : (
             <div className="crear-pedido-layout">
-              {/* Info de la mesa */}
               <div className="pedido-mesa-info">
                 <span className={`estado-badge estado-badge--${mesa.estado_color}`}>
                   {mesa.estado}
@@ -142,12 +153,17 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
                 </p>
               </div>
 
-              {/* Catálogo / líneas de detalle */}
               <div className="pedido-card">
                 <h2>Productos del pedido</h2>
 
+                {!mesaActiva && (
+                  <div className="form-error">
+                    La mesa no esta activa, abre la mesa primero.
+                  </div>
+                )}
+
                 {loadingProductos ? (
-                  <p className="mesa-muted">Cargando catálogo...</p>
+                  <p className="mesa-muted">Cargando catalogo...</p>
                 ) : productos.length === 0 ? (
                   <div className="empty-state">
                     <p>No hay productos disponibles en este momento.</p>
@@ -156,51 +172,55 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
                   <>
                     <div className="detalle-header">
                       <span>Producto</span>
-                      <span>Categoría</span>
+                      <span>Categoria</span>
                       <span>Precio</span>
                       <span>Cantidad</span>
                       <span />
                     </div>
 
                     {detalles.map((linea, index) => {
-                      const productoSeleccionado = productos.find(
-                        (p) => p.id === linea.producto_id
-                      );
+                      const productoSeleccionado = productosById.get(linea.producto_id);
 
                       return (
-                        <div key={index} className="detalle-row">
+                        <div key={`${index}-${linea.producto_id}`} className="detalle-row">
                           <select
                             value={linea.producto_id}
-                            onChange={(e) =>
-                              actualizarLinea(index, "producto_id", Number(e.target.value))
+                            disabled={enviando}
+                            onChange={(event) =>
+                              actualizarLinea(index, "producto_id", Number(event.target.value))
                             }
                           >
                             <option value={0} disabled>
                               Selecciona un producto
                             </option>
-                            {productos.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.nombre}
+                            {productos.map((producto) => (
+                              <option key={producto.id} value={producto.id}>
+                                {producto.nombre}
                               </option>
                             ))}
                           </select>
 
                           <span className="detalle-categoria">
-                            {productoSeleccionado?.categoria ?? "—"}
+                            {productoSeleccionado?.categoria ?? "-"}
                           </span>
 
                           <span className="detalle-precio">
                             {productoSeleccionado
-                              ? `$${Number(productoSeleccionado.precio).toLocaleString("es-CO")}`
-                              : "—"}
+                              ? formatCurrency(productoSeleccionado.precio)
+                              : "-"}
                           </span>
 
                           <input
                             type="number"
                             min={1}
                             value={linea.cantidad}
-                            onChange={(e) =>
-                              actualizarLinea(index, "cantidad", Math.max(1, Number(e.target.value)))
+                            disabled={enviando}
+                            onChange={(event) =>
+                              actualizarLinea(
+                                index,
+                                "cantidad",
+                                Math.max(1, Number(event.target.value) || 1)
+                              )
                             }
                             className="cantidad-input"
                           />
@@ -209,10 +229,10 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
                             type="button"
                             className="quitar-linea"
                             onClick={() => quitarLinea(index)}
-                            disabled={detalles.length === 1}
-                            title="Quitar línea"
+                            disabled={detalles.length === 1 || enviando}
+                            title="Quitar linea"
                           >
-                            ✕
+                            x
                           </button>
                         </div>
                       );
@@ -222,6 +242,7 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
                       type="button"
                       className="secondary-button agregar-linea-btn"
                       onClick={agregarLinea}
+                      disabled={enviando}
                     >
                       + Agregar producto
                     </button>
@@ -229,13 +250,12 @@ export function CrearPedidoPage({ mesa, onVolver, onPedidoCreado }: Props) {
                 )}
               </div>
 
-              {/* Botón crear pedido */}
               <div className="pedido-actions">
                 <button
                   type="button"
                   className="primary-button crear-pedido-btn"
                   onClick={handleCrearPedido}
-                  disabled={enviando || loadingProductos}
+                  disabled={enviando || loadingProductos || !mesaActiva}
                 >
                   {enviando ? "Creando pedido..." : "Crear Pedido"}
                 </button>

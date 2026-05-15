@@ -21,7 +21,7 @@ type Props = {
 };
 
 export function MesasSalonPage({ onCrearPedido }: Props) {
-  const { usuario, rol, logout } = useAuth();
+  const { usuario, rol } = useAuth();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

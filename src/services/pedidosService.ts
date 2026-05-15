@@ -15,3 +15,8 @@ export async function crearPedido(body: CrearPedidoBody) {
   const { data } = await api.post<Pedido>("/pedidos", body);
   return data;
 }
+
+export async function getPedido(id: number) {
+  const { data } = await api.get<Pedido>(`/pedidos/${id}`);
+  return data;
+}
