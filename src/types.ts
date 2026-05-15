@@ -108,4 +108,6 @@ export type Pedido = {
   delivered_at?: string | null;
   created_at: string;
   updated_at: string;
+  hace_minutos?: number;
+  resaltar_por_antiguedad?: boolean;
 };

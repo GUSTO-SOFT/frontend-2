@@ -6,6 +6,7 @@ import { CrearPedidoPage } from "./pages/CrearPedidoPage";
 import { EditarPedidoPage } from "./pages/EditarPedidoPage";
 import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
+import { CocinaPage } from "./pages/CocinaPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -13,7 +14,8 @@ type Vista =
   | { nombre: "crear-pedido"; mesa: Mesa }
   | { nombre: "editar-pedido"; pedidoId: number }
   | { nombre: "menu" }
-  | { nombre: "crear-producto" };
+  | { nombre: "crear-producto" }
+  | { nombre: "cocina" };
 
 function vistaDesdeHash(): Vista {
   const hash = window.location.hash;
@@ -24,6 +26,7 @@ function vistaDesdeHash(): Vista {
   }
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
+  if (hash === "#cocina") return { nombre: "cocina" };
   return { nombre: "mesas" };
 }
 
@@ -72,6 +75,9 @@ export function App() {
 
     case "crear-producto":
       return <CrearProductoPage />;
+
+    case "cocina":
+      return <CocinaPage />;
 
     case "mesas":
     default:
