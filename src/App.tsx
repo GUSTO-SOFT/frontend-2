@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
 import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
+import { CocinaPage } from "./pages/CocinaPage";
 
 export function App() {
   const { isAuthenticated } = useAuth();
@@ -25,6 +26,8 @@ export function App() {
       return <MenuPage />;
     case "#crear-producto":
       return <CrearProductoPage />;
+    case "#cocina":
+      return <CocinaPage />;
     default:
       return <MenuPage />;
   }
