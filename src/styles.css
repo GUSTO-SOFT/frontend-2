@@ -731,3 +731,33 @@ button {
     font-size: clamp(1.8rem, 6vw, 2.8rem);
   }
 }
+
+/* KDS Styles */
+.kds-card {
+  min-height: 280px;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(22, 34, 55, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kds-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(22, 34, 55, 0.1);
+}
+
+.kds-card.urgente {
+  background-color: #fff5f5;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(209, 20, 31, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(209, 20, 31, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(209, 20, 31, 0); }
+}
+
