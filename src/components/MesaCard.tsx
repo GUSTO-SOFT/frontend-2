@@ -1,5 +1,5 @@
 import type { Mesa, Rol } from "../types";
-import { MesaEstadoBadge } from "./MesaEstadoBadge";
+import { MesaIndicador } from "./MesaIndicador";
 import { formatOpenedAt } from "../utils/format";
 
 type Props = {
@@ -22,7 +22,7 @@ export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMese
         <div className={`mesa-number mesa-number--${mesa.estado_color}`}>
           {String(mesa.numero).padStart(2, "0")}
         </div>
-        <MesaEstadoBadge estado={mesa.estado} color={mesa.estado_color} />
+        <MesaIndicador estado={mesa.estado} color={mesa.estado_color} />
       </div>
 
       <div className="mesa-card__body">

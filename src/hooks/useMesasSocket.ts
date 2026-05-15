@@ -3,7 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import { API_URL } from "../api/client";
 import type { MesaSocketPayload } from "../types";
 
-type SocketMode = "connecting" | "websocket" | "polling";
+export type SocketMode = "connecting" | "websocket" | "polling";
 
 export function useMesasSocket(onMesaEstado: (payload: MesaSocketPayload) => void) {
   const [mode, setMode] = useState<SocketMode>("connecting");

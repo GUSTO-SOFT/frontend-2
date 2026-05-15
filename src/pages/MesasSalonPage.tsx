@@ -6,7 +6,9 @@ import { MesaSkeleton } from "../components/MesaSkeleton";
 import { Toast } from "../components/Toast";
 import { AsignarMeseroModal } from "../components/AsignarMeseroModal";
 import { Sidebar } from "../components/Sidebar";
+import { ConexionEstadoBadge } from "../components/ConexionEstadoBadge";
 import { useMesasSocket } from "../hooks/useMesasSocket";
+import { usePollingFallback } from "../hooks/usePollingFallback";
 import { abrirMesa, getMesas } from "../services/mesasService";
 import type { ApiErrorBody, Mesa, MesaSocketPayload, MesaEstado } from "../types";
 
@@ -14,7 +16,7 @@ const PAGE_SIZE = 8;
 
 type FilterState = "todas" | "disponibles" | "ocupadas";
 
-export function MesasPage() {
+export function MesasSalonPage() {
   const { usuario, rol, logout } = useAuth();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [page, setPage] = useState(1);
@@ -64,7 +66,7 @@ export function MesasPage() {
         ocupadas: ocupadas.meta.total,
       });
     } catch {
-      // no se necesitan totales exactos si falla la carga; el usuario sigue viendo los datos de mesas
+      // no se necesitan totales exactos si falla la carga
     }
   }, []);
 
@@ -89,6 +91,9 @@ export function MesasPage() {
     }
   }, [page, filter, loadTotals]);
 
+  // Integración de Polling Fallback
+  usePollingFallback(mode, fetchMesas);
+
   useEffect(() => {
     void fetchMesas();
   }, [fetchMesas]);
@@ -101,16 +106,6 @@ export function MesasPage() {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (mode !== "polling") return;
-
-    const timer = window.setInterval(() => {
-      void fetchMesas(true);
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, [fetchMesas, mode]);
 
   useEffect(() => {
     if (!toast) return;
@@ -232,9 +227,7 @@ export function MesasPage() {
                 <div className="legend">
                   <span><i className="dot dot--verde" /> Disponible</span>
                   <span><i className="dot dot--rojo" /> Ocupada</span>
-                  <span className="connection-state">
-                    {mode === "websocket" ? "Tiempo real activo" : "Polling cada 5s"}
-                  </span>
+                  <ConexionEstadoBadge mode={mode} />
                 </div>
               </div>
 

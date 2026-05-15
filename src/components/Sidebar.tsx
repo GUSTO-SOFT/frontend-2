@@ -11,7 +11,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Mesas", href: "#mesas", roles: ["ADMIN", "MESERO"] },
   { label: "Pedidos", href: "#pedidos", roles: ["ADMIN", "MESERO"] },
   { label: "Cocina", href: "#cocina", roles: ["ADMIN", "CHEF"] },
-  { label: "Notificaciones", href: "#notificaciones", roles: ["ADMIN", "MESERO"] },
 ];
 
 export function Sidebar() {
