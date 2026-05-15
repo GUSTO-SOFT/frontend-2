@@ -20,3 +20,8 @@ export async function getPedido(id: number) {
   const { data } = await api.get<Pedido>(`/pedidos/${id}`);
   return data;
 }
+
+export async function updateEstadoPedido(id: number, estado: string) {
+  const { data } = await api.patch<Pedido>(`/pedidos/${id}/estado`, { estado });
+  return data;
+}
