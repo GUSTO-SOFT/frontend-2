@@ -3,7 +3,7 @@ import { CategoriaSelect } from "./CategoriaSelect";
 import { IngredientesMultiSelect } from "./IngredientesMultiSelect";
 import { createProducto } from "../services/menuService";
 import type { CreateProductoData, CategoriaProducto } from "../types";
-import axios from "axios";
+import { formatCurrency } from "../utils/format";
 
 type Props = {
   onSuccess: () => void;
@@ -45,16 +45,13 @@ export function ProductoForm({ onSuccess, onCancel, onToast }: Props) {
       onToast("Producto creado exitosamente");
       onSuccess();
     } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        const data = error.response?.data;
-        if (data?.error === "PRODUCTO_DUPLICADO") {
-          onToast("Ya existe un producto con ese nombre");
-        } else if (data?.statusCode === 400 && Array.isArray(data.message)) {
-          // Manejar errores de validación de class-validator
-          onToast("Error en los datos del formulario");
-        } else {
-          onToast("Error al crear el producto");
-        }
+      const data = error.response?.data;
+      if (data?.error === "PRODUCTO_DUPLICADO") {
+        onToast("Ya existe un producto con ese nombre");
+      } else if (data?.statusCode === 400 && Array.isArray(data.message)) {
+        onToast("Error en los datos del formulario");
+      } else {
+        onToast("Error al crear el producto");
       }
     } finally {
       setIsSubmitting(false);
@@ -111,28 +108,38 @@ export function ProductoForm({ onSuccess, onCancel, onToast }: Props) {
         </div>
       </div>
 
-      <div className="form-field">
-        <label htmlFor="precio">Precio de Venta ($)</label>
-        <div style={{ position: "relative" }}>
-          <input
-            id="precio"
-            type="number"
-            step="0.01"
-            value={formData.precio || ""}
-            onChange={(e) => setFormData({ ...formData, precio: Number(e.target.value) })}
-            placeholder="12.50"
-            style={{
-              width: "100%",
-              minHeight: "48px",
-              border: errors.precio ? "1px solid #d1141f" : "1px solid #d8deea",
-              borderRadius: "14px",
-              padding: "0 16px 0 30px"
-            }}
-          />
-          <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#667085" }}>$</span>
+        <div className="form-field">
+          <label htmlFor="precio">Precio de Venta (COP)</label>
+          <div style={{ position: "relative" }}>
+            <input
+              id="precio"
+              type="number"
+              step="1"
+              value={formData.precio || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || /^\d+$/.test(val)) {
+                  setFormData({ ...formData, precio: Number(val) });
+                }
+              }}
+              placeholder="12000"
+              style={{
+                width: "100%",
+                minHeight: "48px",
+                border: errors.precio ? "1px solid #d1141f" : "1px solid #d8deea",
+                borderRadius: "14px",
+                padding: "0 16px 0 30px"
+              }}
+            />
+            <span style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "#667085" }}>$</span>
+          </div>
+          {formData.precio > 0 && (
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#007a2f" }}>
+              Valor: {formatCurrency(formData.precio)}
+            </p>
+          )}
+          {errors.precio && <span style={{ color: "#d1141f", fontSize: "0.85rem" }}>{errors.precio}</span>}
         </div>
-        {errors.precio && <span style={{ color: "#d1141f", fontSize: "0.85rem" }}>{errors.precio}</span>}
-      </div>
 
       <IngredientesMultiSelect
         selectedIds={formData.ingredientes}
