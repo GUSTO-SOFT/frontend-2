@@ -8,6 +8,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
+  { label: "Menú", href: "#menu", roles: ["ADMIN", "MESERO", "CHEF"] },
   { label: "Mesas", href: "#mesas", roles: ["ADMIN", "MESERO"] },
   { label: "Pedidos", href: "#pedidos", roles: ["ADMIN", "MESERO"] },
   { label: "Cocina", href: "#cocina", roles: ["ADMIN", "CHEF"] },
@@ -15,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function Sidebar() {
   const { rol, logout } = useAuth();
+  const currentHash = window.location.hash || "#menu";
 
   const filteredItems = NAV_ITEMS.filter((item) => 
     rol && item.roles.includes(rol)
@@ -30,7 +32,7 @@ export function Sidebar() {
         {filteredItems.map((item) => (
           <a 
             key={item.label}
-            className={`side-nav__item ${item.label === "Mesas" ? "side-nav__item--active" : ""}`} 
+            className={`side-nav__item ${currentHash === item.href ? "side-nav__item--active" : ""}`} 
             href={item.href}
           >
             {item.label}
