@@ -10,9 +10,14 @@ export async function getProductosActivos() {
 }
 
 export async function getProductos(
-  params: { activo?: boolean; categoria?: string } = {}
+  params: { activo?: boolean } = {}
 ) {
   const { data } = await api.get<Producto[]>("/menu/productos", { params });
+  return data;
+}
+
+export async function getProducto(id: number) {
+  const { data } = await api.get<Producto>(`/menu/productos/${id}`);
   return data;
 }
 
