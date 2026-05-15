@@ -75,3 +75,31 @@ export type ApiErrorBody = {
   message?: string | string[];
   statusCode?: number;
 };
+
+export type PedidoEstado = "BORRADOR" | "PENDIENTE" | "EN_PREPARACION" | "LISTO" | "ENTREGADO";
+
+export type PedidoDetalle = {
+  id: number;
+  producto_id: number;
+  producto_nombre: string;
+  categoria: CategoriaProducto;
+  precio: number | null;
+  cantidad: number;
+  notas: string | null;
+};
+
+export type Pedido = {
+  id: number;
+  mesa_id: number;
+  mesa_numero: number;
+  mesero_id: number;
+  mesero_nombre: string;
+  estado: PedidoEstado;
+  sent_at: string | null;
+  delivered_at: string | null;
+  detalles: PedidoDetalle[];
+  created_at: string;
+  updated_at: string;
+  hace_minutos?: number;
+  resaltar_por_antiguedad?: boolean;
+};
