@@ -8,10 +8,13 @@ type Props = {
   now: Date;
   isOpening: boolean;
   onAbrirMesa: (mesa: Mesa) => void;
+  onAsignarMesero: (mesa: Mesa) => void;
 };
 
-export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa }: Props) {
-  const canOpen = mesa.estado === "DISPONIBLE" && (rol === "MESERO" || rol === "ADMIN");
+export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMesero }: Props) {
+  const isWorker = rol === "MESERO" || rol === "ADMIN";
+  const canOpen = mesa.estado === "DISPONIBLE" && isWorker;
+  const canAssign = mesa.estado === "OCUPADA" && isWorker;
 
   return (
     <article className={`mesa-card mesa-card--${mesa.estado_color}`}>
@@ -45,6 +48,15 @@ export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa }: Props) {
             onClick={() => onAbrirMesa(mesa)}
           >
             {isOpening ? "Abriendo..." : "Abrir Mesa"}
+          </button>
+        )}
+        {canAssign && (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onAsignarMesero(mesa)}
+          >
+            {mesa.mesero_id ? "Cambiar Mesero" : "Asignar Mesero"}
           </button>
         )}
       </div>
