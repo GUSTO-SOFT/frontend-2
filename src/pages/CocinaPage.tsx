@@ -83,8 +83,18 @@ export function CocinaPage() {
                     <li key={detalle.id} style={{ marginBottom: "8px" }}>
                       <strong>{detalle.cantidad}x</strong> {detalle.producto_nombre}
                       {detalle.notas && (
-                        <div style={{ fontSize: "0.85em", color: "#666", fontStyle: "italic" }}>
-                          Nota: {detalle.notas}
+                        <div style={{ 
+                          marginTop: "6px",
+                          padding: "6px 10px",
+                          backgroundColor: "#fff3cd",
+                          borderLeft: "4px solid #ffc107",
+                          color: "#856404",
+                          fontWeight: "bold",
+                          fontSize: "0.9em",
+                          borderRadius: "4px",
+                          display: "inline-block"
+                        }}>
+                          ⚠️ NOTA: {detalle.notas}
                         </div>
                       )}
                     </li>
