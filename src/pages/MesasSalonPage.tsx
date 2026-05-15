@@ -16,8 +16,12 @@ const PAGE_SIZE = 8;
 
 type FilterState = "todas" | "disponibles" | "ocupadas";
 
-export function MesasSalonPage() {
-  const { usuario, rol, logout } = useAuth();
+type Props = {
+  onCrearPedido: (mesa: Mesa) => void;
+};
+
+export function MesasSalonPage({ onCrearPedido }: Props) {
+  const { usuario, rol } = useAuth();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -245,7 +249,7 @@ export function MesasSalonPage() {
               ) : (
                 <div className="mesa-grid">
                   {mesasFiltradas.map((mesa) => (
-                    <MesaCard
+                      <MesaCard
                       key={mesa.id}
                       mesa={mesa}
                       rol={rol}
@@ -253,6 +257,7 @@ export function MesasSalonPage() {
                       isOpening={openingId === mesa.id}
                       onAbrirMesa={handleAbrirMesa}
                       onAsignarMesero={handleAsignarMesero}
+                      onCrearPedido={onCrearPedido}
                     />
                   ))}
                 </div>

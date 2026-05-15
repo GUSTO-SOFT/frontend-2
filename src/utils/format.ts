@@ -15,11 +15,13 @@ export function formatOpenedAt(openedAt: string | null, now = new Date()) {
   return `Abierta hace ${hours} h${rest ? ` ${rest} min` : ""}`;
 }
 
-export function formatCurrency(amount: number) {
+export function formatCurrency(amount: number | string) {
+  const value = Number(amount);
+
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number.isFinite(value) ? value : 0);
 }
