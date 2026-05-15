@@ -1,7 +1,7 @@
 import type { MesaEstado, MesaEstadoColor } from "../types";
 
 const LABELS: Record<MesaEstado, string> = {
-  DISPONIBLE: "Libre",
+  DISPONIBLE: "Disponible",
   OCUPADA: "Ocupada",
 };
 
@@ -10,7 +10,7 @@ type Props = {
   color: MesaEstadoColor;
 };
 
-export function MesaEstadoBadge({ estado, color }: Props) {
+export function MesaIndicador({ estado, color }: Props) {
   return (
     <span className={`estado-badge estado-badge--${color}`}>
       {LABELS[estado] ?? estado}
