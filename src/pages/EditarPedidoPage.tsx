@@ -1,10 +1,11 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
+import { EnviarPedidoButton } from "../components/EnviarPedidoButton";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { LineaDetallePedido } from "../components/LineaDetallePedido";
 import { getProductosActivos } from "../services/menuService";
-import { actualizarDetallesPedido, getPedido } from "../services/pedidosService";
+import { actualizarDetallesPedido, enviarPedido, getPedido } from "../services/pedidosService";
 import { formatCurrency } from "../utils/format";
 import type { ApiErrorBody, Pedido, Producto } from "../types";
 
@@ -32,6 +33,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     new Map()
   );
   const [enviando, setEnviando] = useState(false);
+  const [enviandoEnvio, setEnviandoEnvio] = useState(false);
   const [pedidoNoEditable, setPedidoNoEditable] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
@@ -305,6 +307,51 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     }
   }
 
+  async function handleEnviarACocina() {
+    if (!pedido) return;
+    if (pedido.estado !== "BORRADOR" || pedidoNoEditable) {
+      setToast({ message: "Este pedido ya fue enviado a cocina", type: "error" });
+      return;
+    }
+
+    if (detalles.length === 0) {
+      setToast({ message: "No puedes enviar un pedido sin productos", type: "error" });
+      return;
+    }
+
+    setEnviandoEnvio(true);
+    try {
+      const data = await enviarPedido(pedidoId);
+      setPedido(data);
+      setToast({ message: "Pedido enviado a cocina correctamente", type: "success" });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const data = error.response?.data as unknown as { code?: string; error?: string; message?: string };
+        const code = data?.error ?? data?.code;
+
+        if (status === 422 && code === "PEDIDO_SIN_ITEMS") {
+          setToast({ message: "No puedes enviar un pedido sin productos", type: "error" });
+          return;
+        }
+
+        if (status === 409 && code === "PEDIDO_YA_ENVIADO") {
+          setPedidoNoEditable(true);
+          setToast({ message: "Este pedido ya fue enviado a cocina", type: "error" });
+          try {
+            const refreshed = await getPedido(pedidoId);
+            setPedido(refreshed);
+          } catch {}
+          return;
+        }
+      }
+
+      setToast({ message: "No se pudo enviar el pedido. Intenta nuevamente.", type: "error" });
+    } finally {
+      setEnviandoEnvio(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -349,7 +396,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
                 {!esEditable && (
                   <>
-                    <div className="form-error">Este pedido ya no puede editarse.</div>
+                    <div className="form-error">
+                      {pedidoNoEditable || pedido.estado === "BORRADOR"
+                        ? "Este pedido ya no puede editarse."
+                        : "Pedido enviado a cocina. Ya no puede editarse."}
+                    </div>
                     <div className="pedido-detalles-list">
                       {pedido.detalles.map((detalle) => (
                         <div key={detalle.id} className="pedido-detalle-item">
@@ -483,11 +534,18 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
               </div>
 
               <div className="pedido-actions">
+                <EnviarPedidoButton
+                  visible={pedido.estado === "BORRADOR"}
+                  detallesCount={detalles.length}
+                  disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
+                  submitting={enviandoEnvio}
+                  onConfirm={handleEnviarACocina}
+                />
                 <button
                   type="button"
                   className="primary-button guardar-pedido-btn"
                   onClick={handleGuardarCambios}
-                  disabled={enviando || detalles.some((linea) => linea.notas.length > 255)}
+                  disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
                 >
                   {enviando ? "Guardando..." : "Guardar cambios"}
                 </button>
