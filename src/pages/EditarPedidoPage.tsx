@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
-import { getPedido } from "../services/pedidosService";
+import { getPedido, updateEstadoPedido } from "../services/pedidosService";
+
 import { formatCurrency } from "../utils/format";
 import type { Pedido } from "../types";
 
@@ -13,7 +14,9 @@ type Props = {
 export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -24,10 +27,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
         const data = await getPedido(pedidoId);
         if (isMounted) setPedido(data);
       } catch {
-        if (isMounted) setToast("No se pudo cargar el pedido creado.");
+        if (isMounted) setToast({ message: "No se pudo cargar el pedido creado.", type: "error" });
       } finally {
         if (isMounted) setLoading(false);
       }
+
     })();
 
     return () => {
@@ -47,6 +51,21 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       return acc + precio * detalle.cantidad;
     }, 0) ?? 0;
   }, [pedido]);
+
+  const handleConfirmarEntrega = async () => {
+    if (!pedido) return;
+    setUpdating(true);
+    try {
+      const updated = await updateEstadoPedido(pedido.id, "ENTREGADO");
+      setPedido(updated);
+      setToast({ message: "¡Entrega confirmada exitosamente!", type: "success" });
+    } catch {
+      setToast({ message: "Error al confirmar la entrega. Intentalo de nuevo.", type: "error" });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
 
   return (
     <div className="app-shell">
@@ -101,12 +120,27 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                     </div>
                   ))}
                 </div>
+
+                {pedido.estado === "LISTO" && (
+                  <div style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
+                    <button
+                      className="primary-button"
+                      style={{ width: "100%", maxWidth: "300px", backgroundColor: "#067647" }}
+                      onClick={handleConfirmarEntrega}
+                      disabled={updating}
+                    >
+                      {updating ? "Confirmando..." : "Confirmar Entrega"}
+                    </button>
+                  </div>
+                )}
               </>
+
             )}
           </div>
         </section>
 
-        {toast && <Toast message={toast} />}
+        {toast && <Toast message={toast.message} type={toast.type} />}
+
       </main>
     </div>
   );
