@@ -30,3 +30,8 @@ export async function actualizarDetallesPedido(id: number, body: ActualizarDetal
   const { data } = await api.patch<Pedido>(`/pedidos/${id}/detalles`, body);
   return data;
 }
+
+export async function enviarPedido(id: number) {
+  const { data } = await api.post<Pedido>(`/pedidos/${id}/enviar`);
+  return data;
+}
