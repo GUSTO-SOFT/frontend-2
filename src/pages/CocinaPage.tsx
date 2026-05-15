@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { cocinaService } from "../services/cocinaService";
+import { updateEstadoPedido } from "../services/pedidosService";
 import type { Pedido } from "../types";
+
 import { Toast } from "../components/Toast";
 
 
@@ -38,9 +40,15 @@ export function CocinaPage() {
 
   const handleUpdateEstado = async (id: number, nuevoEstado: string) => {
     try {
-      await cocinaService.updateEstadoPedido(id, nuevoEstado);
+      await updateEstadoPedido(id, nuevoEstado);
       await fetchPedidos();
+
+      if (nuevoEstado === "LISTO") {
+        setToast({ message: "¡Pedido marcado como listo! Notificando al mesero...", type: "success" });
+        setTimeout(() => setToast(null), 3000);
+      }
     } catch (err: any) {
+
       const msg = err.response?.data?.message || "Error al actualizar pedido";
       setToast({ message: msg, type: "error" });
       setTimeout(() => setToast(null), 5000);
