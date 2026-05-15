@@ -47,7 +47,8 @@ export type CategoriaProducto = "ENTRADA" | "PLATO_FUERTE" | "BEBIDA" | "POSTRE"
 export type Ingrediente = {
   id: number;
   nombre: string;
-  unidadMedida: string;
+  unidadMedida?: string;
+  unidad_medida?: string;
 };
 
 export type Producto = {

@@ -28,7 +28,7 @@ export function MenuPage() {
   const fetchProductos = async () => {
     setLoading(true);
     try {
-      const data = await getProductos();
+      const data = await getProductos({ activo: true });
       setProductos(data);
     } catch {
       setToast("Error al cargar el menú");
@@ -40,6 +40,22 @@ export function MenuPage() {
   const filteredProductos = filter === "TODOS" 
     ? productos 
     : productos.filter(p => p.categoria === filter);
+
+  if (rol !== "ADMIN") {
+    return (
+      <div className="app-shell">
+        <Sidebar />
+        <main className="main-panel">
+          <div className="content">
+            <div className="empty-state">
+              <h2>Acceso Denegado</h2>
+              <p>Solo los administradores pueden acceder a la administración del menú.</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
@@ -59,15 +75,13 @@ export function MenuPage() {
               <h2 style={{ margin: 0 }}>Lista de Productos</h2>
               <p style={{ color: "#667085", margin: "4px 0 0" }}>Gestiona tu oferta gastronómica y disponibilidad.</p>
             </div>
-            {rol === "ADMIN" && (
-              <button 
-                className="primary-button" 
-                style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
-                onClick={() => window.location.hash = "#crear-producto"}
-              >
-                + Nuevo Producto
-              </button>
-            )}
+            <button
+              className="primary-button"
+              style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
+              onClick={() => (window.location.hash = "#crear-producto")}
+            >
+              + Nuevo Producto
+            </button>
           </div>
 
           <div className="filters" style={{ 
@@ -121,18 +135,20 @@ export function MenuPage() {
             <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0", textAlign: "left" }}>
               <thead>
                 <tr style={{ background: "#fdfdfd", borderBottom: "1px solid #f0f0f0" }}>
-                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Producto</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Nombre</th>
                   <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Categoría</th>
-                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Precio ($)</th>
-                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Estado</th>
-                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Acciones</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Precio</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Tiempo</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Activo</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Ingredientes</th>
+                  <th style={{ padding: "20px 24px", color: "#667085", fontWeight: "600", fontSize: "0.85rem" }}>Detalle</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={5} style={{ padding: "60px", textAlign: "center", color: "#667085" }}>Cargando catálogo de productos...</td></tr>
+                  <tr><td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#667085" }}>Cargando catálogo de productos...</td></tr>
                 ) : filteredProductos.length === 0 ? (
-                  <tr><td colSpan={5} style={{ padding: "60px", textAlign: "center", color: "#667085" }}>No se encontraron productos en esta categoría.</td></tr>
+                  <tr><td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#667085" }}>No se encontraron productos en esta categoría.</td></tr>
                 ) : (
                   filteredProductos.map((prod) => (
                     <tr key={prod.id} style={{ borderBottom: "1px solid #f8f8f8" }}>
@@ -151,7 +167,7 @@ export function MenuPage() {
                           </div>
                           <div>
                             <div style={{ fontWeight: "700", color: "#141a2d", fontSize: "0.95rem" }}>{prod.nombre}</div>
-                            <div style={{ fontSize: "0.8rem", color: "#667085", marginTop: "2px" }}>Prep: {prod.tiempo_preparacion} min</div>
+                            <div style={{ fontSize: "0.8rem", color: "#667085", marginTop: "2px" }}>ID: {prod.id}</div>
                           </div>
                         </div>
                       </td>
@@ -169,37 +185,28 @@ export function MenuPage() {
                           {prod.categoria.replace("_", " ")}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", fontWeight: "800", color: "#141a2d" }}>{formatCurrency(prod.precio)}</td>
-                      <td style={{ padding: "16px 24px" }}>
-                        <span style={{ 
-                          display: "inline-flex", 
-                          alignItems: "center", 
-                          gap: "8px", 
-                          fontSize: "0.85rem",
-                          padding: "6px 12px",
-                          borderRadius: "10px",
-                          background: prod.activo ? "#e6f7ed" : "#fff0f1",
-                          color: prod.activo ? "#007a2f" : "#d1141f",
-                          fontWeight: "700"
-                        }}>
-                          <i className={`dot ${prod.activo ? "dot--verde" : "dot--rojo"}`} style={{ width: "8px", height: "8px" }} />
-                          {prod.activo ? "Activo" : "Inactivo"}
-                        </span>
+                      <td style={{ padding: "16px 24px", fontWeight: "800", color: "#141a2d" }}>
+                        {formatCurrency(typeof prod.precio === "string" ? Number(prod.precio) : prod.precio)}
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <button style={{ 
-                          background: "#fff", 
-                          border: "1px solid #e3e9f2", 
-                          borderRadius: "10px",
-                          width: "36px",
-                          height: "36px",
-                          display: "grid",
-                          placeItems: "center",
-                          cursor: "pointer",
-                          color: "#667085",
-                          transition: "all 0.2s"
-                        }}>
-                          ✎
+                        {prod.tiempo_preparacion ?? prod.tiempoPreparacion ?? 0} min
+                      </td>
+                      <td style={{ padding: "16px 24px" }}>
+                        {prod.activo ? "Sí" : "No"}
+                      </td>
+                      <td style={{ padding: "16px 24px", color: "#667085" }}>
+                        {(prod.ingredientes ?? []).length === 0
+                          ? "-"
+                          : (prod.ingredientes ?? []).map((i) => i.nombre).join(", ")}
+                      </td>
+                      <td style={{ padding: "16px 24px" }}>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          style={{ width: "auto", padding: "0 14px" }}
+                          onClick={() => (window.location.hash = `#menu/productos/${prod.id}`)}
+                        >
+                          Ver
                         </button>
                       </td>
                     </tr>
