@@ -9,12 +9,14 @@ type Props = {
   isOpening: boolean;
   onAbrirMesa: (mesa: Mesa) => void;
   onAsignarMesero: (mesa: Mesa) => void;
+  onCrearPedido: (mesa: Mesa) => void;
 };
 
-export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMesero }: Props) {
+export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMesero, onCrearPedido }: Props) {
   const isWorker = rol === "MESERO" || rol === "ADMIN";
   const canOpen = mesa.estado === "DISPONIBLE" && isWorker;
   const canAssign = mesa.estado === "OCUPADA" && isWorker;
+  const canOrder = mesa.estado === "OCUPADA" && isWorker;
 
   return (
     <article className={`mesa-card mesa-card--${mesa.estado_color}`}>
@@ -57,6 +59,16 @@ export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMese
             onClick={() => onAsignarMesero(mesa)}
           >
             {mesa.mesero_id ? "Cambiar Mesero" : "Asignar Mesero"}
+          </button>
+        )}
+        {canOrder && (
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => onCrearPedido(mesa)}
+            style={{ marginTop: "8px" }}
+          >
+            Nuevo Pedido
           </button>
         )}
       </div>

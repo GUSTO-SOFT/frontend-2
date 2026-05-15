@@ -1,7 +1,17 @@
 import { api } from "../api/client";
 import type { Producto, CreateProductoData, Ingrediente } from "../types";
 
-export async function getProductos(params: { activo?: boolean; categoria?: string } = {}) {
+export async function getProductosActivos() {
+  const { data } = await api.get<Producto[]>("/menu/productos", {
+    params: { activo: true },
+  });
+
+  return data;
+}
+
+export async function getProductos(
+  params: { activo?: boolean; categoria?: string } = {}
+) {
   const { data } = await api.get<Producto[]>("/menu/productos", { params });
   return data;
 }

@@ -39,6 +39,9 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
+  const isActive = (href: string) => (
+    currentHash === href || (href === "#pedidos" && currentHash.startsWith("#pedidos/"))
+  );
 
   const filteredItems = NAV_ITEMS.filter((item) => 
     rol && item.roles.includes(rol)
@@ -54,7 +57,7 @@ export function Sidebar() {
         {filteredItems.map((item) => (
           <a 
             key={item.label}
-            className={`side-nav__item ${currentHash === item.href ? "side-nav__item--active" : ""}`} 
+            className={`side-nav__item ${isActive(item.href) ? "side-nav__item--active" : ""}`}
             href={item.href}
             style={{ display: "flex", alignItems: "center", gap: "12px" }}
           >

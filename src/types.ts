@@ -54,10 +54,11 @@ export type Producto = {
   id: number;
   nombre: string;
   categoria: CategoriaProducto;
-  precio: number;
-  tiempo_preparacion: number;
+  precio: number | string;
+  tiempo_preparacion?: number;
+  tiempoPreparacion?: number;
   activo: boolean;
-  ingredientes: Ingrediente[];
+  ingredientes?: Ingrediente[];
   created_at: string;
   updated_at: string;
 };
@@ -76,28 +77,35 @@ export type ApiErrorBody = {
   statusCode?: number;
 };
 
-export type PedidoEstado = "BORRADOR" | "PENDIENTE" | "EN_PREPARACION" | "LISTO" | "ENTREGADO";
+export type PedidoEstado =
+  | "BORRADOR"
+  | "PENDIENTE"
+  | "EN_PREPARACION"
+  | "LISTO"
+  | "ENTREGADO"
+  | "CANCELADO";
 
 export type PedidoDetalle = {
   id: number;
   producto_id: number;
-  producto_nombre: string;
-  categoria: CategoriaProducto;
-  precio: number | null;
+  producto_nombre?: string;
+  categoria?: CategoriaProducto;
   cantidad: number;
-  notas: string | null;
+  precio?: number | null;
+  precio_unitario?: string;
+  notas?: string | null;
 };
 
 export type Pedido = {
   id: number;
   mesa_id: number;
-  mesa_numero: number;
+  mesa_numero?: number;
   mesero_id: number;
-  mesero_nombre: string;
+  mesero_nombre?: string;
   estado: PedidoEstado;
-  sent_at: string | null;
-  delivered_at: string | null;
   detalles: PedidoDetalle[];
+  sent_at?: string | null;
+  delivered_at?: string | null;
   created_at: string;
   updated_at: string;
   hace_minutos?: number;
