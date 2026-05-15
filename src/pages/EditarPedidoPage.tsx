@@ -16,6 +16,8 @@ type Props = {
 type LineaDetalle = {
   producto_id: number;
   cantidad: number;
+  notas: string;
+  notasTouched: boolean;
 };
 
 export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
@@ -24,7 +26,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loadingProductos, setLoadingProductos] = useState(true);
   const [detalles, setDetalles] = useState<LineaDetalle[]>([]);
-  const [erroresPorLinea, setErroresPorLinea] = useState<(string | null)[]>([]);
+  const [erroresCantidadPorLinea, setErroresCantidadPorLinea] = useState<(string | null)[]>([]);
+  const [erroresNotasPorLinea, setErroresNotasPorLinea] = useState<(string | null)[]>([]);
+  const [notasOriginalPorProducto, setNotasOriginalPorProducto] = useState<Map<number, string>>(
+    new Map()
+  );
   const [enviando, setEnviando] = useState(false);
   const [pedidoNoEditable, setPedidoNoEditable] = useState(false);
   const [busqueda, setBusqueda] = useState("");
@@ -40,12 +46,21 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
         if (!isMounted) return;
         setPedido(data);
         setPedidoNoEditable(false);
+        const nextNotasOriginal = new Map<number, string>();
+        data.detalles.forEach((detalle) => {
+          nextNotasOriginal.set(detalle.producto_id, detalle.notas ?? "");
+        });
+        setNotasOriginalPorProducto(nextNotasOriginal);
+
         const detallesIniciales = data.detalles.map((detalle) => ({
           producto_id: detalle.producto_id,
           cantidad: detalle.cantidad,
+          notas: detalle.notas ?? "",
+          notasTouched: false,
         }));
         setDetalles(detallesIniciales);
-        setErroresPorLinea(new Array(detallesIniciales.length).fill(null));
+        setErroresCantidadPorLinea(new Array(detallesIniciales.length).fill(null));
+        setErroresNotasPorLinea(new Array(detallesIniciales.length).fill(null));
       } catch {
         if (isMounted) setToast({ message: "No se pudo cargar el pedido creado.", type: "error" });
       } finally {
@@ -99,6 +114,8 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     const lineas = esEditable ? detalles : pedido.detalles.map((detalle) => ({
       producto_id: detalle.producto_id,
       cantidad: detalle.cantidad,
+      notas: detalle.notas ?? "",
+      notasTouched: false,
     }));
 
     return lineas.reduce((acc, linea) => {
@@ -118,7 +135,18 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
   function actualizarCantidad(index: number, cantidad: number) {
     setDetalles((prev) => prev.map((linea, i) => (i === index ? { ...linea, cantidad } : linea)));
-    setErroresPorLinea((prev) => prev.map((error, i) => (i === index ? null : error)));
+    setErroresCantidadPorLinea((prev) => prev.map((error, i) => (i === index ? null : error)));
+  }
+
+  function actualizarNotas(index: number, notas: string) {
+    setDetalles((prev) =>
+      prev.map((linea, i) => {
+        if (i !== index) return linea;
+        const original = notasOriginalPorProducto.get(linea.producto_id) ?? "";
+        return { ...linea, notas, notasTouched: notas !== original };
+      })
+    );
+    setErroresNotasPorLinea((prev) => prev.map((error, i) => (i === index ? null : error)));
   }
 
   function agregarProducto(productoId: number) {
@@ -129,29 +157,36 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
           i === index ? { ...linea, cantidad: linea.cantidad + 1 } : linea
         );
       }
-      return [...prev, { producto_id: productoId, cantidad: 1 }];
+      return [...prev, { producto_id: productoId, cantidad: 1, notas: "", notasTouched: false }];
     });
-    setErroresPorLinea((prev) => [...prev, null]);
+    setErroresCantidadPorLinea((prev) => [...prev, null]);
+    setErroresNotasPorLinea((prev) => [...prev, null]);
   }
 
   function validarLineas(lineas: LineaDetalle[]) {
-    const nextErrors: (string | null)[] = new Array(lineas.length).fill(null);
+    const nextCantidadErrors: (string | null)[] = new Array(lineas.length).fill(null);
+    const nextNotasErrors: (string | null)[] = new Array(lineas.length).fill(null);
     let ok = true;
 
     lineas.forEach((linea, index) => {
       if (!Number.isInteger(linea.cantidad)) {
-        nextErrors[index] = "Cantidad debe ser un entero.";
+        nextCantidadErrors[index] = "Cantidad debe ser un entero.";
         ok = false;
-        return;
       }
 
       if (linea.cantidad <= 0) {
-        nextErrors[index] = "Cantidad debe ser mayor a 0.";
+        nextCantidadErrors[index] = "Cantidad debe ser mayor a 0.";
+        ok = false;
+      }
+
+      if (linea.notas.length > 255) {
+        nextNotasErrors[index] = "Maximo 255 caracteres.";
         ok = false;
       }
     });
 
-    setErroresPorLinea(nextErrors);
+    setErroresCantidadPorLinea(nextCantidadErrors);
+    setErroresNotasPorLinea(nextNotasErrors);
     return ok;
   }
 
@@ -163,6 +198,12 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     return index;
   }
 
+  function extraerCampoDeMensaje(msg: string) {
+    const match = msg.match(/detalles[\.\[]\d+[\]\.]([a-zA-Z_]+)/);
+    if (!match) return null;
+    return match[1]?.toLowerCase() ?? null;
+  }
+
   function aplicarErroresBackend(message: string | string[] | undefined) {
     if (!message) return;
     if (typeof message === "string") {
@@ -172,17 +213,25 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
     if (message.length === 0) return;
 
-    const nextErrors: (string | null)[] = new Array(detalles.length).fill(null);
+    const nextCantidadErrors: (string | null)[] = new Array(detalles.length).fill(null);
+    const nextNotasErrors: (string | null)[] = new Array(detalles.length).fill(null);
     message.forEach((msg) => {
       const index = extraerIndiceDeMensaje(msg);
       if (index == null) return;
-      if (index < 0 || index >= nextErrors.length) return;
-      nextErrors[index] = msg;
+      if (index < 0 || index >= nextCantidadErrors.length) return;
+      const campo = extraerCampoDeMensaje(msg);
+      if (campo === "notas") {
+        nextNotasErrors[index] = msg;
+      } else {
+        nextCantidadErrors[index] = msg;
+      }
     });
 
-    const tieneErroresAsignados = nextErrors.some(Boolean);
+    const tieneErroresAsignados =
+      nextCantidadErrors.some(Boolean) || nextNotasErrors.some(Boolean);
     if (tieneErroresAsignados) {
-      setErroresPorLinea(nextErrors);
+      setErroresCantidadPorLinea(nextCantidadErrors);
+      setErroresNotasPorLinea(nextNotasErrors);
       return;
     }
 
@@ -203,11 +252,32 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
     setEnviando(true);
     try {
-      const data = await actualizarDetallesPedido(pedidoId, { detalles });
+      const detallesPayload = detalles.map((linea) => {
+        const base = { producto_id: linea.producto_id, cantidad: linea.cantidad };
+        if (!linea.notasTouched) return base;
+        const normalizada = linea.notas.trim();
+        return { ...base, notas: normalizada.length === 0 ? null : normalizada };
+      });
+
+      const data = await actualizarDetallesPedido(pedidoId, { detalles: detallesPayload });
       setPedido(data);
       setToast({ message: "Pedido actualizado correctamente.", type: "success" });
       setPedidoNoEditable(false);
-      setErroresPorLinea(new Array(detalles.length).fill(null));
+      const nextNotasOriginal = new Map<number, string>();
+      data.detalles.forEach((detalle) => {
+        nextNotasOriginal.set(detalle.producto_id, detalle.notas ?? "");
+      });
+      setNotasOriginalPorProducto(nextNotasOriginal);
+
+      const detallesActualizados = data.detalles.map((detalle) => ({
+        producto_id: detalle.producto_id,
+        cantidad: detalle.cantidad,
+        notas: detalle.notas ?? "",
+        notasTouched: false,
+      }));
+      setDetalles(detallesActualizados);
+      setErroresCantidadPorLinea(new Array(detallesActualizados.length).fill(null));
+      setErroresNotasPorLinea(new Array(detallesActualizados.length).fill(null));
     } catch (error) {
       if (axios.isAxiosError<ApiErrorBody>(error)) {
         const code = error.response?.data?.error;
@@ -219,10 +289,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
           return;
         }
 
-        if (status === 400) {
+        if (status === 422 || status === 400) {
           aplicarErroresBackend(error.response?.data?.message);
-          if (!Array.isArray(error.response?.data?.message)) {
-            setToast({ message: "Revisa las cantidades ingresadas.", type: "error" });
+          if (code === "NOTAS_DEMASIADO_LARGAS") {
+            setToast({ message: "Hay notas que superan el maximo permitido.", type: "error" });
+            return;
           }
           return;
         }
@@ -287,6 +358,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                               {detalle.producto_nombre ?? `Producto ${detalle.producto_id}`}
                             </strong>
                             <span>{detalle.categoria ?? "Sin categoria"}</span>
+                            {detalle.notas ? <em className="nota-especial">{detalle.notas}</em> : null}
                           </div>
                           <span>{detalle.cantidad} und.</span>
                           <strong>
@@ -339,9 +411,12 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                         categoria={categoria}
                         precio={precio}
                         cantidad={linea.cantidad}
+                        notas={linea.notas}
                         disabled={enviando}
-                        error={erroresPorLinea[index]}
+                        errorCantidad={erroresCantidadPorLinea[index]}
+                        errorNotas={erroresNotasPorLinea[index]}
                         onCantidadChange={(cantidad) => actualizarCantidad(index, cantidad)}
+                        onNotasChange={(notas) => actualizarNotas(index, notas)}
                       />
                     );
                   })
@@ -412,7 +487,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                   type="button"
                   className="primary-button guardar-pedido-btn"
                   onClick={handleGuardarCambios}
-                  disabled={enviando}
+                  disabled={enviando || detalles.some((linea) => linea.notas.length > 255)}
                 >
                   {enviando ? "Guardando..." : "Guardar cambios"}
                 </button>
