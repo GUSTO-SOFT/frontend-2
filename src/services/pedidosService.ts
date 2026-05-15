@@ -4,6 +4,7 @@ import type { Pedido } from "../types";
 type DetallePedido = {
   producto_id: number;
   cantidad: number;
+  notas?: string | null;
 };
 
 type CrearPedidoBody = {

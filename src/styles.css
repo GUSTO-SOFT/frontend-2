@@ -809,6 +809,70 @@ button {
   white-space: nowrap;
 }
 
+.detalle-row--pedido .detalle-producto {
+  overflow: visible;
+  text-overflow: initial;
+  white-space: normal;
+  display: grid;
+  gap: 10px;
+}
+
+.notas-input {
+  display: grid;
+  gap: 6px;
+}
+
+.notas-input__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.notas-input__label {
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.notas-input__field {
+  width: 100%;
+  border: 1px solid #d8deea;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.notas-input__field:focus {
+  border-color: #d1141f;
+  box-shadow: 0 0 0 3px rgba(209, 20, 31, 0.12);
+}
+
+.notas-input__field--error {
+  border-color: #f97066;
+  background: #fffbfa;
+}
+
+.char-counter {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #667085;
+}
+
+.char-counter--limit {
+  color: #b42318;
+}
+
+.nota-especial {
+  color: #475467;
+  font-style: italic;
+  font-size: 0.92rem;
+}
+
 .detalle-en-pedido {
   text-align: center;
   font-weight: 800;
