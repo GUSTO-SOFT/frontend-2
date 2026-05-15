@@ -42,9 +42,37 @@ export type MesaSocketPayload = {
   opened_at: string | null;
 };
 
+export type CategoriaProducto = "ENTRADA" | "PLATO_FUERTE" | "BEBIDA" | "POSTRE";
+
+export type Ingrediente = {
+  id: number;
+  nombre: string;
+  unidadMedida: string;
+};
+
+export type Producto = {
+  id: number;
+  nombre: string;
+  categoria: CategoriaProducto;
+  precio: number;
+  tiempo_preparacion: number;
+  activo: boolean;
+  ingredientes: Ingrediente[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateProductoData = {
+  nombre: string;
+  categoria: CategoriaProducto;
+  precio: number;
+  tiempo_preparacion: number;
+  ingredientes: number[];
+};
+
 export type ApiErrorBody = {
   error?: string;
-  message?: string;
+  message?: string | string[];
   statusCode?: number;
 };
 
