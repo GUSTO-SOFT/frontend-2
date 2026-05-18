@@ -5,7 +5,13 @@ import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { LineaDetallePedido } from "../components/LineaDetallePedido";
 import { getProductosActivos } from "../services/menuService";
-import { actualizarDetallesPedido, enviarPedido, getPedido } from "../services/pedidosService";
+import {
+  actualizarDetallesPedido,
+  confirmarEntrega,
+  enviarPedido,
+  getPedido,
+} from "../services/pedidosService";
+import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../utils/format";
 import type { ApiErrorBody, Pedido, Producto } from "../types";
 
@@ -24,6 +30,7 @@ type LineaDetalle = {
 export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loadingProductos, setLoadingProductos] = useState(true);
   const [detalles, setDetalles] = useState<LineaDetalle[]>([]);
@@ -37,6 +44,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [pedidoNoEditable, setPedidoNoEditable] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+  const { rol } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -56,6 +64,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
         const detallesIniciales = data.detalles.map((detalle) => ({
           producto_id: detalle.producto_id,
+          whitespace: false,
           cantidad: detalle.cantidad,
           notas: detalle.notas ?? "",
           notasTouched: false,
@@ -273,6 +282,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
       const detallesActualizados = data.detalles.map((detalle) => ({
         producto_id: detalle.producto_id,
+        whitespace: false,
         cantidad: detalle.cantidad,
         notas: detalle.notas ?? "",
         notasTouched: false,
@@ -352,6 +362,20 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     }
   }
 
+  async function handleConfirmarEntrega() {
+    if (!pedido) return;
+    setUpdating(true);
+    try {
+      const data = await confirmarEntrega(pedidoId);
+      setPedido(data);
+      setToast({ message: "Entrega del pedido confirmada correctamente.", type: "success" });
+    } catch {
+      setToast({ message: "No se pudo confirmar la entrega del pedido.", type: "error" });
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -370,188 +394,249 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
         <section className="content">
           <div className="crear-pedido-layout">
             <div className="pedido-card pedido-resumen">
-            {loading ? (
-              <p className="mesa-muted">Cargando pedido...</p>
-            ) : !pedido ? (
-              <div className="empty-state">
-                <h2>Pedido no disponible</h2>
-                <p>Intenta volver a mesas y abrir el pedido nuevamente.</p>
-              </div>
-            ) : (
-              <>
-                <div className="pedido-resumen__header">
-                  <div>
-                    <span className="mesa-muted">Mesa</span>
-                    <strong>{pedido.mesa_numero ?? pedido.mesa_id}</strong>
-                  </div>
-                  <div>
-                    <span className="mesa-muted">Estado</span>
-                    <strong>{pedido.estado}</strong>
-                  </div>
-                  <div>
-                    <span className="mesa-muted">Total</span>
-                    <strong>{formatCurrency(total)}</strong>
-                  </div>
+              {loading ? (
+                <p className="mesa-muted">Cargando pedido...</p>
+              ) : !pedido ? (
+                <div className="empty-state">
+                  <h2>Pedido no disponible</h2>
+                  <p>Intenta volver a mesas y abrir el pedido nuevamente.</p>
                 </div>
-
-                {!esEditable && (
-                  <>
-                    <div className="form-error">
-                      {pedidoNoEditable || pedido.estado === "BORRADOR"
-                        ? "Este pedido ya no puede editarse."
-                        : "Pedido enviado a cocina. Ya no puede editarse."}
+              ) : (
+                <>
+                  <div className="pedido-resumen__header">
+                    <div>
+                      <span className="mesa-muted">Mesa</span>
+                      <strong>{pedido.mesa_numero ?? pedido.mesa_id}</strong>
                     </div>
-                    <div className="pedido-detalles-list">
-                      {pedido.detalles.map((detalle) => (
-                        <div key={detalle.id} className="pedido-detalle-item">
-                          <div>
+                    <div>
+                      <span className="mesa-muted">Estado</span>
+                      <strong>{pedido.estado}</strong>
+                    </div>
+                    <div>
+                      <span className="mesa-muted">Total</span>
+                      <strong>{formatCurrency(total)}</strong>
+                    </div>
+                  </div>
+
+                  {!esEditable && (
+                    <>
+                      <div className="form-error">
+                        {pedidoNoEditable || pedido.estado === "BORRADOR"
+                          ? "Este pedido ya no puede editarse."
+                          : "Pedido enviado a cocina. Ya no puede editarse."}
+                      </div>
+                      <div className="pedido-detalles-list">
+                        {pedido.detalles.map((detalle) => (
+                          <div key={detalle.id} className="pedido-detalle-item">
+                            <div>
+                              <strong>
+                                {detalle.producto_nombre ?? `Producto ${detalle.producto_id}`}
+                              </strong>
+                              <span>{detalle.categoria ?? "Sin categoria"}</span>
+                              {detalle.notas ? <em className="nota-especial">{detalle.notas}</em> : null}
+                            </div>
+                            <span>{detalle.cantidad} und.</span>
                             <strong>
-                              {detalle.producto_nombre ?? `Producto ${detalle.producto_id}`}
+                              {formatCurrency(detalle.precio ?? Number(detalle.precio_unitario ?? 0))}
                             </strong>
-                            <span>{detalle.categoria ?? "Sin categoria"}</span>
-                            {detalle.notas ? <em className="nota-especial">{detalle.notas}</em> : null}
                           </div>
-                          <span>{detalle.cantidad} und.</span>
-                          <strong>
-                            {formatCurrency(detalle.precio ?? Number(detalle.precio_unitario ?? 0))}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </div>
+                        ))}
+                      </div>
 
-          {!loading && pedido && esEditable && (
-            <>
-              <div className="pedido-card">
-                <h2>Editar productos (BORRADOR)</h2>
-
-                <div className="detalle-header">
-                  <span>Producto</span>
-                  <span>Categoria</span>
-                  <span>Precio</span>
-                  <span>Cantidad</span>
-                  <span />
-                </div>
-
-                {detalles.length === 0 ? (
-                  <div className="empty-state">
-                    <p>No hay lineas de detalle en este pedido.</p>
-                  </div>
-                ) : (
-                  detalles.map((linea, index) => {
-                    const producto = productosById.get(linea.producto_id);
-                    const detalle = pedidoDetalleByProductoId.get(linea.producto_id);
-                    const productoNombre =
-                      producto?.nombre ??
-                      detalle?.producto_nombre ??
-                      `Producto ${linea.producto_id}`;
-                    const categoria = producto?.categoria ?? detalle?.categoria ?? "Sin categoria";
-                    const precioRaw =
-                      producto?.precio ?? detalle?.precio ?? Number(detalle?.precio_unitario ?? 0);
-                    const precio =
-                      typeof precioRaw === "number" && Number.isFinite(precioRaw) ? precioRaw : null;
-
-                    return (
-                      <LineaDetallePedido
-                        key={`${linea.producto_id}-${index}`}
-                        productoNombre={productoNombre}
-                        categoria={categoria}
-                        precio={precio}
-                        cantidad={linea.cantidad}
-                        notas={linea.notas}
-                        disabled={enviando}
-                        errorCantidad={erroresCantidadPorLinea[index]}
-                        errorNotas={erroresNotasPorLinea[index]}
-                        onCantidadChange={(cantidad) => actualizarCantidad(index, cantidad)}
-                        onNotasChange={(notas) => actualizarNotas(index, notas)}
-                      />
-                    );
-                  })
-                )}
-              </div>
-
-              <div className="pedido-card">
-                <h2>Catalogo de productos</h2>
-
-                <div className="catalogo-actions">
-                  <div className="search catalogo-search">
-                    <span>Buscar</span>
-                    <input
-                      value={busqueda}
-                      onChange={(event) => setBusqueda(event.target.value)}
-                      placeholder="Busca un producto..."
-                      disabled={loadingProductos || enviando}
-                    />
-                  </div>
-                </div>
-
-                {loadingProductos ? (
-                  <p className="mesa-muted">Cargando catalogo...</p>
-                ) : productos.length === 0 ? (
-                  <div className="empty-state">
-                    <p>No hay productos disponibles en este momento.</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="detalle-header">
-                      <span>Producto</span>
-                      <span>Categoria</span>
-                      <span>Precio</span>
-                      <span>En pedido</span>
-                      <span />
-                    </div>
-
-                    {productosFiltrados.map((producto) => {
-                      const existente = detalles.find((linea) => linea.producto_id === producto.id);
-                      return (
-                        <div key={producto.id} className="detalle-row">
-                          <div className="detalle-producto">
-                            <strong>{producto.nombre}</strong>
+                      {pedido.estado === "LISTO" && (rol === "MESERO" || rol === "ADMIN") && (
+                        <div className="entrega-alert" style={{
+                          marginTop: "20px",
+                          padding: "20px",
+                          background: "linear-gradient(135deg, #c3f5ca 0%, #e8fced 100%)",
+                          border: "1px solid #007a2f",
+                          borderRadius: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                          alignItems: "start"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "20px" }}>🍽️</span>
+                            <strong style={{ color: "#007a2f", fontSize: "1.1rem" }}>
+                              ¡El pedido está listo para ser entregado!
+                            </strong>
                           </div>
-                          <span className="detalle-categoria">{producto.categoria}</span>
-                          <span className="detalle-precio">{formatCurrency(producto.precio)}</span>
-                          <span className="detalle-en-pedido">
-                            {existente ? `${existente.cantidad} und.` : "-"}
-                          </span>
+                          <p style={{ margin: 0, color: "#1e4620", fontSize: "0.95rem" }}>
+                            Una vez que lleves los platos a la mesa, confirma la entrega para actualizar el estado del pedido a <strong>ENTREGADO</strong>.
+                          </p>
                           <button
                             type="button"
-                            className="accion-linea accion-linea--agregar"
-                            disabled={enviando}
-                            onClick={() => agregarProducto(producto.id)}
-                            title="Agregar producto"
+                            className="primary-button"
+                            style={{
+                              marginTop: "4px",
+                              boxShadow: "0 4px 12px rgba(0, 122, 47, 0.2)",
+                              maxWidth: "280px"
+                            }}
+                            onClick={handleConfirmarEntrega}
+                            disabled={updating}
                           >
-                            +
+                            {updating ? "Confirmando..." : "Confirmar Entrega ✅"}
                           </button>
                         </div>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
+                      )}
 
-              <div className="pedido-actions">
-                <EnviarPedidoButton
-                  visible={pedido.estado === "BORRADOR"}
-                  detallesCount={detalles.length}
-                  disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
-                  submitting={enviandoEnvio}
-                  onConfirm={handleEnviarACocina}
-                />
-                <button
-                  type="button"
-                  className="primary-button guardar-pedido-btn"
-                  onClick={handleGuardarCambios}
-                  disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
-                >
-                  {enviando ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
-            </>
-          )}
+                      {pedido.estado === "ENTREGADO" && (
+                        <div className="entrega-alert" style={{
+                          marginTop: "20px",
+                          padding: "20px",
+                          background: "linear-gradient(135deg, #e4e8f0 0%, #f5f7fb 100%)",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          alignItems: "start"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "20px" }}>✅</span>
+                            <strong style={{ color: "#344054", fontSize: "1.1rem" }}>
+                              Entrega Confirmada
+                            </strong>
+                          </div>
+                          <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>
+                            Este pedido ya ha sido entregado exitosamente a la mesa.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+
+            {!loading && pedido && esEditable && (
+              <>
+                <div className="pedido-card">
+                  <h2>Editar productos (BORRADOR)</h2>
+
+                  <div className="detalle-header">
+                    <span>Producto</span>
+                    <span>Categoria</span>
+                    <span>Precio</span>
+                    <span>Cantidad</span>
+                    <span />
+                  </div>
+
+                  {detalles.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No hay lineas de detalle en este pedido.</p>
+                    </div>
+                  ) : (
+                    detalles.map((linea, index) => {
+                      const producto = productosById.get(linea.producto_id);
+                      const detalle = pedidoDetalleByProductoId.get(linea.producto_id);
+                      const productoNombre =
+                        producto?.nombre ??
+                        detalle?.producto_nombre ??
+                        `Producto ${linea.producto_id}`;
+                      const categoria = producto?.categoria ?? detalle?.categoria ?? "Sin categoria";
+                      const precioRaw =
+                        producto?.precio ?? detalle?.precio ?? Number(detalle?.precio_unitario ?? 0);
+                      const precio =
+                        typeof precioRaw === "number" && Number.isFinite(precioRaw) ? precioRaw : null;
+
+                      return (
+                        <LineaDetallePedido
+                          key={`${linea.producto_id}-${index}`}
+                          productoNombre={productoNombre}
+                          categoria={categoria}
+                          precio={precio}
+                          cantidad={linea.cantidad}
+                          notas={linea.notas}
+                          disabled={enviando}
+                          errorCantidad={erroresCantidadPorLinea[index]}
+                          errorNotas={erroresNotasPorLinea[index]}
+                          onCantidadChange={(cantidad) => actualizarCantidad(index, cantidad)}
+                          onNotasChange={(notas) => actualizarNotas(index, notas)}
+                        />
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="pedido-card">
+                  <h2>Catalogo de productos</h2>
+
+                  <div className="catalogo-actions">
+                    <div className="search catalogo-search">
+                      <span>Buscar</span>
+                      <input
+                        value={busqueda}
+                        onChange={(event) => setBusqueda(event.target.value)}
+                        placeholder="Busca un producto..."
+                        disabled={loadingProductos || enviando}
+                      />
+                    </div>
+                  </div>
+
+                  {loadingProductos ? (
+                    <p className="mesa-muted">Cargando catalogo...</p>
+                  ) : productos.length === 0 ? (
+                    <div className="empty-state">
+                      <p>No hay productos disponibles en este momento.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="detalle-header">
+                        <span>Producto</span>
+                        <span>Categoria</span>
+                        <span>Precio</span>
+                        <span>En pedido</span>
+                        <span />
+                      </div>
+
+                      {productosFiltrados.map((producto) => {
+                        const existente = detalles.find((linea) => linea.producto_id === producto.id);
+                        return (
+                          <div key={producto.id} className="detalle-row">
+                            <div className="detalle-producto">
+                              <strong>{producto.nombre}</strong>
+                            </div>
+                            <span className="detalle-categoria">{producto.categoria}</span>
+                            <span className="detalle-precio">{formatCurrency(producto.precio)}</span>
+                            <span className="detalle-en-pedido">
+                              {existente ? `${existente.cantidad} und.` : "-"}
+                            </span>
+                            <button
+                              type="button"
+                              className="accion-linea accion-linea--agregar"
+                              disabled={enviando}
+                              onClick={() => agregarProducto(producto.id)}
+                              title="Agregar producto"
+                            >
+                              +
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+
+                <div className="pedido-actions">
+                  <EnviarPedidoButton
+                    visible={pedido.estado === "BORRADOR"}
+                    detallesCount={detalles.length}
+                    disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
+                    submitting={enviandoEnvio}
+                    onConfirm={handleEnviarACocina}
+                  />
+                  <button
+                    type="button"
+                    className="primary-button guardar-pedido-btn"
+                    onClick={handleGuardarCambios}
+                    disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
+                  >
+                    {enviando ? "Guardando..." : "Guardar cambios"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </section>
 

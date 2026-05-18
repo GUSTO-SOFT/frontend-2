@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { cocinaService } from "../services/cocinaService";
+import { updateEstadoPedido } from "../services/pedidosService";
 import type { Pedido } from "../types";
+
+import { Toast } from "../components/Toast";
+
 
 export function CocinaPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+
 
   const fetchPedidos = async () => {
     try {
@@ -34,12 +40,21 @@ export function CocinaPage() {
 
   const handleUpdateEstado = async (id: number, nuevoEstado: string) => {
     try {
-      await cocinaService.updateEstadoPedido(id, nuevoEstado);
+      await updateEstadoPedido(id, nuevoEstado);
       await fetchPedidos();
+
+      if (nuevoEstado === "LISTO") {
+        setToast({ message: "¡Pedido marcado como listo! Notificando al mesero...", type: "success" });
+        setTimeout(() => setToast(null), 3000);
+      }
     } catch (err: any) {
-      alert(err.response?.data?.message || "Error al actualizar pedido");
+
+      const msg = err.response?.data?.message || "Error al actualizar pedido";
+      setToast({ message: msg, type: "error" });
+      setTimeout(() => setToast(null), 5000);
     }
   };
+
 
   return (
     <div className="app-shell">
@@ -83,8 +98,18 @@ export function CocinaPage() {
                     <li key={detalle.id} style={{ marginBottom: "8px" }}>
                       <strong>{detalle.cantidad}x</strong> {detalle.producto_nombre}
                       {detalle.notas && (
-                        <div style={{ fontSize: "0.85em", color: "#666", fontStyle: "italic" }}>
-                          Nota: {detalle.notas}
+                        <div style={{ 
+                          marginTop: "6px",
+                          padding: "6px 10px",
+                          backgroundColor: "#fff3cd",
+                          borderLeft: "4px solid #ffc107",
+                          color: "#856404",
+                          fontWeight: "bold",
+                          fontSize: "0.9em",
+                          borderRadius: "4px",
+                          display: "inline-block"
+                        }}>
+                          ⚠️ NOTA: {detalle.notas}
                         </div>
                       )}
                     </li>
@@ -120,6 +145,7 @@ export function CocinaPage() {
           </div>
         )}
         </div>
+        {toast && <Toast message={toast.message} type={toast.type} />}
       </main>
     </div>
   );
