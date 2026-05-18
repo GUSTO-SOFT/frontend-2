@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
+import { EnviarPedidoButton } from "../components/EnviarPedidoButton";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { LineaDetallePedido } from "../components/LineaDetallePedido";
@@ -45,7 +46,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
   const { rol } = useAuth();
 
-
   useEffect(() => {
     let isMounted = true;
 
@@ -77,7 +77,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       } finally {
         if (isMounted) setLoading(false);
       }
-
     })();
 
     return () => {
@@ -115,7 +114,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   }, [pedido]);
 
   const esEditable = useMemo(() => {
-
     if (!pedido) return false;
     if (pedidoNoEditable) return false;
     return pedido.estado === "BORRADOR";
@@ -621,17 +619,13 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                 </div>
 
                 <div className="pedido-actions">
-                  {pedido.estado === "BORRADOR" && (
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      style={{ maxWidth: "200px" }}
-                      onClick={handleEnviarACocina}
-                      disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
-                    >
-                      {enviandoEnvio ? "Enviando..." : "Enviar a cocina"}
-                    </button>
-                  )}
+                  <EnviarPedidoButton
+                    visible={pedido.estado === "BORRADOR"}
+                    detallesCount={detalles.length}
+                    disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
+                    submitting={enviandoEnvio}
+                    onConfirm={handleEnviarACocina}
+                  />
                   <button
                     type="button"
                     className="primary-button guardar-pedido-btn"
