@@ -39,6 +39,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     new Map()
   );
   const [enviando, setEnviando] = useState(false);
+  const [enviandoEnvio, setEnviandoEnvio] = useState(false);
   const [pedidoNoEditable, setPedidoNoEditable] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
@@ -63,6 +64,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
         const detallesIniciales = data.detalles.map((detalle) => ({
           producto_id: detalle.producto_id,
+          whitespace: false,
           cantidad: detalle.cantidad,
           notas: detalle.notas ?? "",
           notasTouched: false,
@@ -282,6 +284,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
       const detallesActualizados = data.detalles.map((detalle) => ({
         producto_id: detalle.producto_id,
+        whitespace: false,
         cantidad: detalle.cantidad,
         notas: detalle.notas ?? "",
         notasTouched: false,
@@ -328,7 +331,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       return;
     }
 
-    setEnviando(true);
+    setEnviandoEnvio(true);
     try {
       const data = await enviarPedido(pedidoId);
       setPedido(data);
@@ -357,7 +360,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
       setToast({ message: "No se pudo enviar el pedido. Intenta nuevamente.", type: "error" });
     } finally {
-      setEnviando(false);
+      setEnviandoEnvio(false);
     }
   }
 
@@ -374,6 +377,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       setUpdating(false);
     }
   }
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -418,7 +422,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
                   {!esEditable && (
                     <>
-                      <div className="form-error">Este pedido ya no puede editarse.</div>
+                      <div className="form-error">
+                        {pedidoNoEditable || pedido.estado === "BORRADOR"
+                          ? "Este pedido ya no puede editarse."
+                          : "Pedido enviado a cocina. Ya no puede editarse."}
+                      </div>
                       <div className="pedido-detalles-list">
                         {pedido.detalles.map((detalle) => (
                           <div key={detalle.id} className="pedido-detalle-item">
@@ -434,74 +442,74 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                               {formatCurrency(detalle.precio ?? Number(detalle.precio_unitario ?? 0))}
                             </strong>
                           </div>
-                      ))}
-                    </div>
-
-                    {pedido.estado === "LISTO" && (rol === "MESERO" || rol === "ADMIN") && (
-                      <div className="entrega-alert" style={{
-                        marginTop: "20px",
-                        padding: "20px",
-                        background: "linear-gradient(135deg, #c3f5ca 0%, #e8fced 100%)",
-                        border: "1px solid #007a2f",
-                        borderRadius: "16px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "12px",
-                        alignItems: "start"
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "20px" }}>🍽️</span>
-                          <strong style={{ color: "#007a2f", fontSize: "1.1rem" }}>
-                            ¡El pedido está listo para ser entregado!
-                          </strong>
-                        </div>
-                        <p style={{ margin: 0, color: "#1e4620", fontSize: "0.95rem" }}>
-                          Una vez que lleves los platos a la mesa, confirma la entrega para actualizar el estado del pedido a <strong>ENTREGADO</strong>.
-                        </p>
-                        <button
-                          type="button"
-                          className="primary-button"
-                          style={{
-                            marginTop: "4px",
-                            boxShadow: "0 4px 12px rgba(0, 122, 47, 0.2)",
-                            maxWidth: "280px"
-                          }}
-                          onClick={handleConfirmarEntrega}
-                          disabled={updating}
-                        >
-                          {updating ? "Confirmando..." : "Confirmar Entrega ✅"}
-                        </button>
+                        ))}
                       </div>
-                    )}
 
-                    {pedido.estado === "ENTREGADO" && (
-                      <div className="entrega-alert" style={{
-                        marginTop: "20px",
-                        padding: "20px",
-                        background: "linear-gradient(135deg, #e4e8f0 0%, #f5f7fb 100%)",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "16px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                        alignItems: "start"
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "20px" }}>✅</span>
-                          <strong style={{ color: "#344054", fontSize: "1.1rem" }}>
-                            Entrega Confirmada
-                          </strong>
+                      {pedido.estado === "LISTO" && (rol === "MESERO" || rol === "ADMIN") && (
+                        <div className="entrega-alert" style={{
+                          marginTop: "20px",
+                          padding: "20px",
+                          background: "linear-gradient(135deg, #c3f5ca 0%, #e8fced 100%)",
+                          border: "1px solid #007a2f",
+                          borderRadius: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "12px",
+                          alignItems: "start"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "20px" }}>🍽️</span>
+                            <strong style={{ color: "#007a2f", fontSize: "1.1rem" }}>
+                              ¡El pedido está listo para ser entregado!
+                            </strong>
+                          </div>
+                          <p style={{ margin: 0, color: "#1e4620", fontSize: "0.95rem" }}>
+                            Una vez que lleves los platos a la mesa, confirma la entrega para actualizar el estado del pedido a <strong>ENTREGADO</strong>.
+                          </p>
+                          <button
+                            type="button"
+                            className="primary-button"
+                            style={{
+                              marginTop: "4px",
+                              boxShadow: "0 4px 12px rgba(0, 122, 47, 0.2)",
+                              maxWidth: "280px"
+                            }}
+                            onClick={handleConfirmarEntrega}
+                            disabled={updating}
+                          >
+                            {updating ? "Confirmando..." : "Confirmar Entrega ✅"}
+                          </button>
                         </div>
-                        <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>
-                          Este pedido ya ha sido entregado exitosamente a la mesa.
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
+                      )}
+
+                      {pedido.estado === "ENTREGADO" && (
+                        <div className="entrega-alert" style={{
+                          marginTop: "20px",
+                          padding: "20px",
+                          background: "linear-gradient(135deg, #e4e8f0 0%, #f5f7fb 100%)",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          alignItems: "start"
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "20px" }}>✅</span>
+                            <strong style={{ color: "#344054", fontSize: "1.1rem" }}>
+                              Entrega Confirmada
+                            </strong>
+                          </div>
+                          <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>
+                            Este pedido ya ha sido entregado exitosamente a la mesa.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
 
             {!loading && pedido && esEditable && (
               <>
@@ -619,16 +627,16 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                       className="secondary-button"
                       style={{ maxWidth: "200px" }}
                       onClick={handleEnviarACocina}
-                      disabled={enviando}
+                      disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
                     >
-                      Enviar a cocina
+                      {enviandoEnvio ? "Enviando..." : "Enviar a cocina"}
                     </button>
                   )}
                   <button
                     type="button"
                     className="primary-button guardar-pedido-btn"
                     onClick={handleGuardarCambios}
-                    disabled={enviando || detalles.some((linea) => linea.notas.length > 255)}
+                    disabled={enviando || enviandoEnvio || detalles.some((linea) => linea.notas.length > 255)}
                   >
                     {enviando ? "Guardando..." : "Guardar cambios"}
                   </button>
