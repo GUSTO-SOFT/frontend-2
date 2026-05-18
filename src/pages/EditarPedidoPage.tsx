@@ -4,8 +4,13 @@ import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { LineaDetallePedido } from "../components/LineaDetallePedido";
 import { getProductosActivos } from "../services/menuService";
-import { actualizarDetallesPedido, getPedido, updateEstadoPedido } from "../services/pedidosService";
-
+import {
+  actualizarDetallesPedido,
+  confirmarEntrega,
+  enviarPedido,
+  getPedido,
+} from "../services/pedidosService";
+import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../utils/format";
 import type { ApiErrorBody, Pedido, Producto } from "../types";
 
@@ -37,6 +42,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [pedidoNoEditable, setPedidoNoEditable] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+  const { rol } = useAuth();
 
 
   useEffect(() => {
@@ -105,20 +111,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     if (!pedido) return new Map<number, Pedido["detalles"][number]>();
     return new Map(pedido.detalles.map((detalle) => [detalle.producto_id, detalle]));
   }, [pedido]);
-
-  const handleConfirmarEntrega = async () => {
-    if (!pedido) return;
-    setUpdating(true);
-    try {
-      const updated = await updateEstadoPedido(pedido.id, "ENTREGADO");
-      setPedido(updated);
-      setToast({ message: "¡Entrega confirmada exitosamente!", type: "success" });
-    } catch {
-      setToast({ message: "Error al confirmar la entrega. Intentalo de nuevo.", type: "error" });
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   const esEditable = useMemo(() => {
 
@@ -324,6 +316,64 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     }
   }
 
+  async function handleEnviarACocina() {
+    if (!pedido) return;
+    if (pedido.estado !== "BORRADOR" || pedidoNoEditable) {
+      setToast({ message: "Este pedido ya fue enviado a cocina", type: "error" });
+      return;
+    }
+
+    if (detalles.length === 0) {
+      setToast({ message: "No puedes enviar un pedido sin productos", type: "error" });
+      return;
+    }
+
+    setEnviando(true);
+    try {
+      const data = await enviarPedido(pedidoId);
+      setPedido(data);
+      setToast({ message: "Pedido enviado a cocina correctamente", type: "success" });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const data = error.response?.data as unknown as { code?: string; error?: string; message?: string };
+        const code = data?.error ?? data?.code;
+
+        if (status === 422 && code === "PEDIDO_SIN_ITEMS") {
+          setToast({ message: "No puedes enviar un pedido sin productos", type: "error" });
+          return;
+        }
+
+        if (status === 409 && code === "PEDIDO_YA_ENVIADO") {
+          setPedidoNoEditable(true);
+          setToast({ message: "Este pedido ya fue enviado a cocina", type: "error" });
+          try {
+            const refreshed = await getPedido(pedidoId);
+            setPedido(refreshed);
+          } catch {}
+          return;
+        }
+      }
+
+      setToast({ message: "No se pudo enviar el pedido. Intenta nuevamente.", type: "error" });
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function handleConfirmarEntrega() {
+    if (!pedido) return;
+    setUpdating(true);
+    try {
+      const data = await confirmarEntrega(pedidoId);
+      setPedido(data);
+      setToast({ message: "Entrega del pedido confirmada correctamente.", type: "success" });
+    } catch {
+      setToast({ message: "No se pudo confirmar la entrega del pedido.", type: "error" });
+    } finally {
+      setUpdating(false);
+    }
+  }
   return (
     <div className="app-shell">
       <Sidebar />
@@ -384,26 +434,74 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                               {formatCurrency(detalle.precio ?? Number(detalle.precio_unitario ?? 0))}
                             </strong>
                           </div>
-                        ))}
-                      </div>
+                      ))}
+                    </div>
 
-                      {pedido.estado === "LISTO" && (
-                        <div style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
-                          <button
-                            className="primary-button"
-                            style={{ width: "100%", maxWidth: "300px", backgroundColor: "#067647" }}
-                            onClick={handleConfirmarEntrega}
-                            disabled={updating}
-                          >
-                            {updating ? "Confirmando..." : "Confirmar Entrega"}
-                          </button>
+                    {pedido.estado === "LISTO" && (rol === "MESERO" || rol === "ADMIN") && (
+                      <div className="entrega-alert" style={{
+                        marginTop: "20px",
+                        padding: "20px",
+                        background: "linear-gradient(135deg, #c3f5ca 0%, #e8fced 100%)",
+                        border: "1px solid #007a2f",
+                        borderRadius: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        alignItems: "start"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "20px" }}>🍽️</span>
+                          <strong style={{ color: "#007a2f", fontSize: "1.1rem" }}>
+                            ¡El pedido está listo para ser entregado!
+                          </strong>
                         </div>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </div>
+                        <p style={{ margin: 0, color: "#1e4620", fontSize: "0.95rem" }}>
+                          Una vez que lleves los platos a la mesa, confirma la entrega para actualizar el estado del pedido a <strong>ENTREGADO</strong>.
+                        </p>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          style={{
+                            marginTop: "4px",
+                            boxShadow: "0 4px 12px rgba(0, 122, 47, 0.2)",
+                            maxWidth: "280px"
+                          }}
+                          onClick={handleConfirmarEntrega}
+                          disabled={updating}
+                        >
+                          {updating ? "Confirmando..." : "Confirmar Entrega ✅"}
+                        </button>
+                      </div>
+                    )}
+
+                    {pedido.estado === "ENTREGADO" && (
+                      <div className="entrega-alert" style={{
+                        marginTop: "20px",
+                        padding: "20px",
+                        background: "linear-gradient(135deg, #e4e8f0 0%, #f5f7fb 100%)",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "16px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        alignItems: "start"
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "20px" }}>✅</span>
+                          <strong style={{ color: "#344054", fontSize: "1.1rem" }}>
+                            Entrega Confirmada
+                          </strong>
+                        </div>
+                        <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>
+                          Este pedido ya ha sido entregado exitosamente a la mesa.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
 
             {!loading && pedido && esEditable && (
               <>
@@ -515,6 +613,17 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                 </div>
 
                 <div className="pedido-actions">
+                  {pedido.estado === "BORRADOR" && (
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      style={{ maxWidth: "200px" }}
+                      onClick={handleEnviarACocina}
+                      disabled={enviando}
+                    >
+                      Enviar a cocina
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="primary-button guardar-pedido-btn"
