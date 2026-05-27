@@ -30,3 +30,13 @@ export async function getIngredientes() {
   const { data } = await api.get<Ingrediente[]>("/inventario/ingredientes");
   return data;
 }
+
+export async function updateProducto(id: number, producto: Partial<CreateProductoData>) {
+  const { data } = await api.put<Producto>(`/menu/productos/${id}`, producto);
+  return data;
+}
+
+export async function toggleDisponibilidad(id: number, activo: boolean) {
+  const { data } = await api.patch<Producto>(`/menu/productos/${id}/disponibilidad`, { activo });
+  return data;
+}

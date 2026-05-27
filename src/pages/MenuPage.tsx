@@ -5,6 +5,8 @@ import { getProductos } from "../services/menuService";
 import type { Producto, CategoriaProducto } from "../types";
 import { Toast } from "../components/Toast";
 import { formatCurrency } from "../utils/format";
+import { ToggleDisponibilidad } from "../components/ToggleDisponibilidad";
+import { FormularioEditarProducto } from "../components/FormularioEditarProducto";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   TODOS: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
@@ -20,6 +22,8 @@ export function MenuPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<CategoriaProducto | "TODOS">("TODOS");
   const [toast, setToast] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
 
   useEffect(() => {
     fetchProductos();
@@ -40,6 +44,33 @@ export function MenuPage() {
   const filteredProductos = filter === "TODOS" 
     ? productos 
     : productos.filter(p => p.categoria === filter);
+
+  const handleToggleDisponibilidad = (productoId: number, nuevoEstado: boolean) => {
+    setProductos(prev => prev.map(p => 
+      p.id === productoId ? { ...p, activo: nuevoEstado } : p
+    ));
+  };
+
+  const handleToggleError = (mensaje: string) => {
+    if (rol === "ADMIN") {
+      setPermissionError(mensaje);
+      setTimeout(() => setPermissionError(null), 5000);
+    }
+  };
+
+  const handleEditSuccess = (productoActualizado: Producto) => {
+    setProductos(prev => prev.map(p => 
+      p.id === productoActualizado.id ? productoActualizado : p
+    ));
+    setEditingProducto(null);
+  };
+
+  const handleEditPermissionError = (mensaje: string) => {
+    if (rol === "ADMIN") {
+      setPermissionError(mensaje);
+      setTimeout(() => setPermissionError(null), 5000);
+    }
+  };
 
   if (rol !== "ADMIN") {
     return (
@@ -192,7 +223,29 @@ export function MenuPage() {
                         {prod.tiempo_preparacion ?? prod.tiempoPreparacion ?? 0} min
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        {prod.activo ? "Sí" : "No"}
+                        {rol === "ADMIN" ? (
+                          <ToggleDisponibilidad
+                            productoId={prod.id}
+                            activo={prod.activo}
+                            onToggleSuccess={(nuevoEstado) => handleToggleDisponibilidad(prod.id, nuevoEstado)}
+                            onError={handleToggleError}
+                          />
+                        ) : (
+                          <span style={{ 
+                            display: "inline-flex", 
+                            alignItems: "center", 
+                            gap: "8px", 
+                            fontSize: "0.85rem",
+                            padding: "6px 12px",
+                            borderRadius: "10px",
+                            background: prod.activo ? "#e6f7ed" : "#fff0f1",
+                            color: prod.activo ? "#007a2f" : "#d1141f",
+                            fontWeight: "700"
+                          }}>
+                            <i className={`dot ${prod.activo ? "dot--verde" : "dot--rojo"}`} style={{ width: "8px", height: "8px" }} />
+                            {prod.activo ? "Activo" : "Inactivo"}
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: "16px 24px", color: "#667085" }}>
                         {(prod.ingredientes ?? []).length === 0
@@ -200,14 +253,25 @@ export function MenuPage() {
                           : (prod.ingredientes ?? []).map((i) => i.nombre).join(", ")}
                       </td>
                       <td style={{ padding: "16px 24px" }}>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          style={{ width: "auto", padding: "0 14px" }}
-                          onClick={() => (window.location.hash = `#menu/productos/${prod.id}`)}
-                        >
-                          Ver
-                        </button>
+                        {rol === "ADMIN" && (
+                          <button 
+                            onClick={() => setEditingProducto(prod)}
+                            style={{ 
+                              background: "#fff", 
+                              border: "1px solid #e3e9f2", 
+                              borderRadius: "10px",
+                              width: "36px",
+                              height: "36px",
+                              display: "grid",
+                              placeItems: "center",
+                              cursor: "pointer",
+                              color: "#667085",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            ✎
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -218,6 +282,55 @@ export function MenuPage() {
         </section>
 
         {toast && <Toast message={toast} />}
+        {permissionError && rol === "ADMIN" && (
+          <div style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            background: "#d1141f",
+            color: "#fff",
+            padding: "16px 24px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            fontWeight: "600"
+          }}>
+            {permissionError}
+          </div>
+        )}
+        {editingProducto && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: "#fff",
+              borderRadius: "24px",
+              padding: "32px",
+              maxWidth: "600px",
+              width: "90%",
+              maxHeight: "90vh",
+              overflowY: "auto"
+            }}>
+              <h2 style={{ margin: "0 0 24px", fontSize: "1.5rem" }}>Editar Producto</h2>
+              <FormularioEditarProducto
+                producto={editingProducto}
+                onSuccess={handleEditSuccess}
+                onCancel={() => setEditingProducto(null)}
+                onToast={setToast}
+                onPermissionError={handleEditPermissionError}
+              />
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

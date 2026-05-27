@@ -64,7 +64,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
         const detallesIniciales = data.detalles.map((detalle) => ({
           producto_id: detalle.producto_id,
-          whitespace: false,
           cantidad: detalle.cantidad,
           notas: detalle.notas ?? "",
           notasTouched: false,
@@ -282,7 +281,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
       const detallesActualizados = data.detalles.map((detalle) => ({
         producto_id: detalle.producto_id,
-        whitespace: false,
         cantidad: detalle.cantidad,
         notas: detalle.notas ?? "",
         notasTouched: false,
