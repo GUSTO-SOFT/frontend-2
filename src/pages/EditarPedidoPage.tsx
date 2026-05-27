@@ -46,7 +46,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
   const { rol } = useAuth();
 
-
   useEffect(() => {
     let isMounted = true;
 
@@ -77,7 +76,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       } finally {
         if (isMounted) setLoading(false);
       }
-
     })();
 
     return () => {
@@ -115,7 +113,6 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
   }, [pedido]);
 
   const esEditable = useMemo(() => {
-
     if (!pedido) return false;
     if (pedidoNoEditable) return false;
     return pedido.estado === "BORRADOR";
