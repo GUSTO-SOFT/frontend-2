@@ -6,6 +6,7 @@ import { CrearPedidoPage } from "./pages/CrearPedidoPage";
 import { EditarPedidoPage } from "./pages/EditarPedidoPage";
 import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
+import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
 import type { Mesa } from "./types";
 
@@ -15,14 +16,19 @@ type Vista =
   | { nombre: "editar-pedido"; pedidoId: number }
   | { nombre: "menu" }
   | { nombre: "crear-producto" }
+  | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" };
 
 function vistaDesdeHash(): Vista {
   const hash = window.location.hash;
   const pedidoMatch = hash.match(/^#pedidos\/(\d+)$/);
+  const productoMatch = hash.match(/^#menu\/productos\/(\d+)$/);
 
   if (pedidoMatch) {
     return { nombre: "editar-pedido", pedidoId: Number(pedidoMatch[1]) };
+  }
+  if (productoMatch) {
+    return { nombre: "producto-detalle", productoId: Number(productoMatch[1]) };
   }
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
@@ -76,6 +82,16 @@ export function App() {
     case "crear-producto":
       return <CrearProductoPage />;
 
+    case "producto-detalle":
+      return (
+        <ProductoDetallePage
+          productoId={vista.productoId}
+          onVolver={() => {
+            setVista({ nombre: "menu" });
+            window.location.hash = "#menu";
+          }}
+        />
+      );
     case "cocina":
       return <CocinaPage />;
 

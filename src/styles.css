@@ -941,6 +941,30 @@ button {
 .pedido-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.enviar-pedido {
+  width: fit-content;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+}
+
+.enviar-pedido-btn {
+  width: auto;
+  min-width: 200px;
+}
+
+.inline-warning {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #f7e8a3;
+  background: #fffcf0;
+  color: #7a5b00;
+  font-weight: 800;
+  font-size: 0.85rem;
 }
 
 .crear-pedido-btn {
