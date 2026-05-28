@@ -1,15 +1,30 @@
 export type Rol = "ADMIN" | "MESERO" | "CHEF" | "CAJERO";
 
-export type MesaEstado = "DISPONIBLE" | "OCUPADA";
-
-export type MesaEstadoColor = "verde" | "rojo";
+export type UsuarioEstado = "ACTIVO" | "INACTIVO";
 
 export type Usuario = {
   id: number;
   nombre: string;
   email: string;
   rol: Rol;
+  estado: UsuarioEstado;
+  created_at: string;
+  updated_at: string;
 };
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
+};
+
+export type MesaEstado = "DISPONIBLE" | "OCUPADA";
+
+export type MesaEstadoColor = "verde" | "rojo";
 
 export type Mesa = {
   id: number;
@@ -22,16 +37,6 @@ export type Mesa = {
   abierta_hace_minutos: number | null;
   created_at: string;
   updated_at: string;
-};
-
-export type PaginatedResponse<T> = {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
 };
 
 export type MesaSocketPayload = {
