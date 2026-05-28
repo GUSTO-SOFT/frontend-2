@@ -1,4 +1,4 @@
-export type Rol = "ADMIN" | "MESERO" | "CHEF";
+export type Rol = "ADMIN" | "MESERO" | "CHEF" | "CAJERO";
 
 export type MesaEstado = "DISPONIBLE" | "OCUPADA";
 
