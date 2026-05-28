@@ -113,7 +113,6 @@ export function InventarioPage() {
                   {[
                     { label: "Total", value: stats.total, color: "#0f172a" },
                     { label: "Activos", value: stats.activos, color: "#047857" },
-                    { label: "Inactivos", value: stats.inactivos, color: "#b91c1c" },
                     { label: "Bajo stock", value: stats.bajoStock, color: "#d97706", clickable: true }
                   ].map(s => (
                     <div
