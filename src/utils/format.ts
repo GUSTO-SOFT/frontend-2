@@ -25,3 +25,17 @@ export function formatCurrency(amount: number | string) {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(value) ? value : 0);
 }
+
+export function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
+}

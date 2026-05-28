@@ -21,3 +21,8 @@ export async function asignarMesero(id: number, mesero_id: number) {
   const { data } = await api.patch<Mesa>(`/mesas/${id}/asignar`, { mesero_id });
   return data;
 }
+
+export async function createMesa(numero: number) {
+  const { data } = await api.post<Mesa>("/mesas", { numero });
+  return data;
+}

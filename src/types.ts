@@ -1,15 +1,30 @@
-export type Rol = "ADMIN" | "MESERO" | "CHEF";
+export type Rol = "ADMIN" | "MESERO" | "CHEF" | "CAJERO";
 
-export type MesaEstado = "DISPONIBLE" | "OCUPADA";
-
-export type MesaEstadoColor = "verde" | "rojo";
+export type UsuarioEstado = "ACTIVO" | "INACTIVO";
 
 export type Usuario = {
   id: number;
   nombre: string;
   email: string;
   rol: Rol;
+  estado: UsuarioEstado;
+  created_at: string;
+  updated_at: string;
 };
+
+export type PaginatedResponse<T> = {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+  };
+};
+
+export type MesaEstado = "DISPONIBLE" | "OCUPADA";
+
+export type MesaEstadoColor = "verde" | "rojo";
 
 export type Mesa = {
   id: number;
@@ -22,16 +37,6 @@ export type Mesa = {
   abierta_hace_minutos: number | null;
   created_at: string;
   updated_at: string;
-};
-
-export type PaginatedResponse<T> = {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    total_pages: number;
-  };
 };
 
 export type MesaSocketPayload = {
@@ -49,6 +54,38 @@ export type Ingrediente = {
   nombre: string;
   unidadMedida?: string;
   unidad_medida?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  activo?: boolean;
+  imagen_url?: string;
+};
+
+export type CreateIngredienteData = {
+  nombre: string;
+  unidad_medida: "KG" | "G" | "L" | "ML" | "UNIDAD";
+  stock_actual: number;
+  stock_minimo: number;
+};
+
+export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
+
+export type MovimientoStock = {
+  id: number;
+  ingrediente_id: number;
+  ingrediente_nombre?: string;
+  tipo: MovimientoStockTipo;
+  cantidad: number;
+  motivo: string;
+  usuario_id: number;
+  usuario_nombre?: string;
+  fecha_utc: string;
+  created_at: string;
+};
+
+export type AjusteStockResponse = {
+  ingrediente_id: number;
+  stock_actual: number;
+  movimiento: MovimientoStock;
 };
 
 export type Producto = {
@@ -68,8 +105,23 @@ export type CreateProductoData = {
   nombre: string;
   categoria: CategoriaProducto;
   precio: number;
-  tiempo_preparacion: number;
-  ingredientes: number[];
+  tiempo_preparacion?: number;
+  ingredientes: { ingrediente_id: number; cantidad: number }[];
+};
+
+export type AlertaInventario = {
+  id: number;
+  ingrediente_id: number;
+  nombre: string;
+  stock_actual: number;
+  stock_minimo: number;
+  generada_at: string;
+};
+
+export type BloqueoProducto = {
+  bloqueado: boolean;
+  motivo: string | null;
+  ingredientes_agotados: { id: number; nombre: string }[];
 };
 
 export type ApiErrorBody = {
