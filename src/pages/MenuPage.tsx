@@ -7,6 +7,7 @@ import { Toast } from "../components/Toast";
 import { formatCurrency } from "../utils/format";
 import { ToggleDisponibilidad } from "../components/ToggleDisponibilidad";
 import { FormularioEditarProducto } from "../components/FormularioEditarProducto";
+import { BloqueoIndicator } from "../components/BloqueoIndicator";
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   TODOS: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
@@ -72,7 +73,7 @@ export function MenuPage() {
     }
   };
 
-  if (rol !== "ADMIN") {
+  if (rol !== "ADMIN" && rol !== "CHEF") {
     return (
       <div className="app-shell">
         <Sidebar />
@@ -80,7 +81,7 @@ export function MenuPage() {
           <div className="content">
             <div className="empty-state">
               <h2>Acceso Denegado</h2>
-              <p>Solo los administradores pueden acceder a la administración del menú.</p>
+              <p>Solo administradores y chefs pueden acceder a la administración del menú.</p>
             </div>
           </div>
         </main>
@@ -197,7 +198,10 @@ export function MenuPage() {
                             {prod.categoria === "BEBIDA" ? "🍹" : prod.categoria === "POSTRE" ? "🍰" : "🍽️"}
                           </div>
                           <div>
-                            <div style={{ fontWeight: "700", color: "#141a2d", fontSize: "0.95rem" }}>{prod.nombre}</div>
+                            <div style={{ display: "flex", alignItems: "center" }}>
+                              <div style={{ fontWeight: "700", color: "#141a2d", fontSize: "0.95rem" }}>{prod.nombre}</div>
+                              <BloqueoIndicator productoId={prod.id} />
+                            </div>
                             <div style={{ fontSize: "0.8rem", color: "#667085", marginTop: "2px" }}>ID: {prod.id}</div>
                           </div>
                         </div>

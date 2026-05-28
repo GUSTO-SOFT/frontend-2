@@ -3,6 +3,7 @@ import { useAuth } from "../auth/AuthContext";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { ListaIngredientes } from "../components/ListaIngredientes";
+import { AlertasBanner } from "../components/AlertasBanner";
 import { getIngredientes } from "../services/inventarioService";
 import type { Ingrediente } from "../types";
 
@@ -23,8 +24,12 @@ export function InventarioPage() {
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
-    fetchIngredientes(page);
-  }, [page]);
+    if (rol === "ADMIN") {
+      fetchIngredientes(page);
+    } else {
+      setLoading(false);
+    }
+  }, [page, rol]);
 
   useEffect(() => {
     if (!toast) return;
@@ -48,7 +53,7 @@ export function InventarioPage() {
     }
   };
 
-  if (rol !== "ADMIN") {
+  if (rol !== "ADMIN" && rol !== "CHEF") {
     return (
       <div className="app-shell">
         <Sidebar />
@@ -56,7 +61,7 @@ export function InventarioPage() {
           <section className="content">
             <div className="empty-state">
               <h2>Acceso Denegado</h2>
-              <p>Solo los administradores pueden acceder a inventario.</p>
+              <p>Solo administradores y chefs pueden acceder a inventario.</p>
             </div>
           </section>
         </main>
@@ -64,84 +69,91 @@ export function InventarioPage() {
     );
   }
 
+  const isAdmin = rol === "ADMIN";
+  const isChef = rol === "CHEF";
+  const isAlertasView = window.location.hash === "#inventario/alertas";
+
+  const stats = {
+    total: totalItems,
+    activos: ingredientes.filter(i => i.activo).length,
+    inactivos: ingredientes.filter(i => i.activo === false).length,
+    bajoStock: ingredientes.filter(i => {
+      const actual = Number(i.stock_actual ?? (i as any).stockActual ?? 0);
+      const minimo = Number(i.stock_minimo ?? (i as any).stockMinimo ?? 0);
+      return actual <= minimo;
+    }).length
+  };
+
   return (
     <div className="app-shell">
       <Sidebar />
       <main className="main-panel">
         <header className="topbar" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h1 style={{ margin: 0 }}>Gestión de inventario</h1>            
-          </div>
-          <div className="session-user">
-            <strong>{usuario?.nombre}</strong>
-            <span>{rol}</span>
-          </div>
+          <div><h1 style={{ margin: 0 }}>Gestión de inventario</h1></div>
+          <div className="session-user"><strong>{usuario?.nombre}</strong><span>{rol}</span></div>
         </header>
 
         {toast && <Toast message={toast.message} type={toast.type} />}
 
         <section className="content">
           <div style={{ display: "grid", gap: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-              <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>
-                Gestión de existencias en tiempo real para cocina central.
-              </p>
-              <button
-                type="button"
-                onClick={() => { window.location.hash = "#inventario/nuevo"; }}
-                style={{
-                  background: "#d1141f",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "14px",
-                  padding: "14px 22px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Agregar ingrediente
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "18px" }}>
-              <div style={{ background: "#fff", borderRadius: "24px", padding: "22px", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
-                <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>
-                  Total ingredientes
-                </span>
-                <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: "#0f172a" }}>{totalItems}</div>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "24px", padding: "22px", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
-                <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>
-                  Activos en página
-                </span>
-                <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: "#047857" }}>{ingredientes.filter((ing) => ing.activo).length}</div>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "24px", padding: "22px", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
-                <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>
-                  Inactivos en página
-                </span>
-                <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: "#b91c1c" }}>{ingredientes.filter((ing) => ing.activo === false).length}</div>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "24px", padding: "22px", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
-                <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>
-                  Bajo stock
-                </span>
-                <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: "#d97706" }}>
-                  {ingredientes.filter((ing) => typeof ing.stock_actual === "number" && typeof ing.stock_minimo === "number" && ing.stock_actual <= ing.stock_minimo).length}
+            {isAlertasView ? <AlertasBanner mode="page" /> : null}
+            {isAlertasView ? null : !isChef ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                  <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>Gestión de existencias en tiempo real.</p>
+                  {isAdmin && (
+                    <button type="button" onClick={() => { window.location.hash = "#inventario/nuevo"; }} className="primary-button" style={{ width: "auto", background: "#d1141f" }}>
+                      Agregar ingrediente
+                    </button>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            <ListaIngredientes
-              ingredientes={ingredientes}
-              loading={loading}
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              totalItems={totalItems}
-              onAjusteSuccess={(message) => setToast({ message, type: "success" })}
-              onRefresh={() => fetchIngredientes(page)}
-            />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "18px" }}>
+                  {[
+                    { label: "Total", value: stats.total, color: "#0f172a" },
+                    { label: "Activos", value: stats.activos, color: "#047857" },
+                    { label: "Inactivos", value: stats.inactivos, color: "#b91c1c" },
+                    { label: "Bajo stock", value: stats.bajoStock, color: "#d97706", clickable: true }
+                  ].map(s => (
+                    <div
+                      key={s.label}
+                      onClick={s.clickable ? () => { window.location.hash = "#inventario/alertas"; } : undefined}
+                      role={s.clickable ? "button" : undefined}
+                      tabIndex={s.clickable ? 0 : undefined}
+                      onKeyDown={s.clickable ? (e) => { if (e.key === "Enter" || e.key === " ") window.location.hash = "#inventario/alertas"; } : undefined}
+                      style={{
+                        background: "#fff",
+                        borderRadius: "24px",
+                        padding: "22px",
+                        boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)",
+                        cursor: s.clickable ? "pointer" : "default",
+                        border: s.clickable ? "1px solid #f0f0f0" : "none",
+                      }}
+                    >
+                      <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>{s.label}</span>
+                      <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: s.color }}>{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <ListaIngredientes
+                  ingredientes={ingredientes}
+                  loading={loading}
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                  totalItems={totalItems}
+                  canAdjust={isAdmin}
+                  onAjusteSuccess={(message) => setToast({ message, type: "success" })}
+                  onRefresh={() => fetchIngredientes(page)}
+                />
+              </>
+            ) : (
+              <div style={{ background: "#fff", borderRadius: "24px", padding: "40px", textAlign: "center", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
+                <p style={{ color: "#667085" }}>Vista de alertas habilitada para Chef. La gestión completa requiere rol Administrador.</p>
+              </div>
+            )}
           </div>
         </section>
       </main>
