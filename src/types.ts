@@ -67,6 +67,20 @@ export type CreateIngredienteData = {
   stock_minimo: number;
 };
 
+export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
+
+export type MovimientoStock = {
+  id: number;
+  ingrediente_id: number;
+  tipo: MovimientoStockTipo;
+  cantidad: number;
+  motivo: string;
+  usuario_id: number;
+  usuario_nombre?: string;
+  fecha_utc: string;
+  created_at: string;
+};
+
 export type Producto = {
   id: number;
   nombre: string;

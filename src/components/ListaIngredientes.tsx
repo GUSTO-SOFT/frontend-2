@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { AjusteStockModal } from "./AjusteStockModal";
 import type { Ingrediente } from "../types";
 
 type Props = {
@@ -7,9 +9,13 @@ type Props = {
   totalPages: number;
   onPageChange: (page: number) => void;
   totalItems: number;
+  onAjusteSuccess?: (message: string) => void;
+  onRefresh?: () => void;
 };
 
-export function ListaIngredientes({ ingredientes, loading, page, totalPages, onPageChange, totalItems }: Props) {
+export function ListaIngredientes({ ingredientes, loading, page, totalPages, onPageChange, totalItems, onAjusteSuccess, onRefresh }: Props) {
+  const [selectedIngrediente, setSelectedIngrediente] = useState<Ingrediente | null>(null);
+  const [showModal, setShowModal] = useState(false);
   return (
     <div style={{ background: "#fff", borderRadius: "24px", overflow: "hidden", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
       <div style={{ padding: "24px 24px 0 24px" }}>
@@ -34,18 +40,19 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
             <th style={{ padding: "18px 24px", textAlign: "right" }}>Stock actual</th>
             <th style={{ padding: "18px 24px", textAlign: "right" }}>Stock mínimo</th>
             <th style={{ padding: "18px 24px", textAlign: "center" }}>Estado</th>
+            <th style={{ padding: "18px 24px", textAlign: "center" }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} style={{ padding: "32px", textAlign: "center" }}>
+              <td colSpan={6} style={{ padding: "32px", textAlign: "center" }}>
                 Cargando ingredientes...
               </td>
             </tr>
           ) : ingredientes.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ padding: "32px", textAlign: "center" }}>
+              <td colSpan={6} style={{ padding: "32px", textAlign: "center" }}>
                 No hay ingredientes disponibles.
               </td>
             </tr>
@@ -78,6 +85,27 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "90px", padding: "8px 12px", borderRadius: "999px", background: ingrediente.activo ? "#e6f7ed" : "#fff0f1", color: ingrediente.activo ? "#047857" : "#b91c1c", fontWeight: 700, fontSize: "0.85rem" }}>
                       {ingrediente.activo ? "Activo" : "Inactivo"}
                     </span>
+                  </td>
+                  <td style={{ padding: "18px 24px", textAlign: "center" }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedIngrediente(ingrediente);
+                        setShowModal(true);
+                      }}
+                      style={{
+                        background: "#d1141f",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        fontSize: "0.85rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Ajustar
+                    </button>
                   </td>
                 </tr>
               );
@@ -125,6 +153,26 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
           Siguiente
         </button>
       </div>
+
+      {selectedIngrediente && (
+        <AjusteStockModal
+          ingrediente={selectedIngrediente}
+          isOpen={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedIngrediente(null);
+          }}
+          onSuccess={(message) => {
+            onAjusteSuccess?.(message);
+            onRefresh?.();
+            setShowModal(false);
+            setSelectedIngrediente(null);
+          }}
+          onError={(message) => {
+            onAjusteSuccess?.(message);
+          }}
+        />
+      )}
     </div>
   );
 }

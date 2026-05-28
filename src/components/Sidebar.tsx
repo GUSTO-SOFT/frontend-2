@@ -1,12 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import type { Rol } from "../types";
 
-type NavItem = {
+type SubItem = {
   label: string;
   href: string;
+};
+
+type NavItem = {
+  label: string;
+  href?: string;
   roles: Rol[];
   icon: React.ReactNode;
+  items?: SubItem[];
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -24,9 +30,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     label: "Inventario", 
-    href: "#inventario", 
     roles: ["ADMIN"],
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M4 8h16"/></svg>
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M4 8h16"/></svg>,
+    items: [
+      { label: "Gestión de Ingredientes", href: "#inventario" },
+      { label: "Movimientos de Stock", href: "#movimientos-stock" },
+    ]
   },
   { 
     label: "Pedidos", 
@@ -57,11 +66,18 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
-  const isActive = (href: string) => (
-    currentHash === href ||
-    (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
-    (href === "#inventario" && currentHash.startsWith("#inventario"))
-  );
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+
+  const isActive = (href?: string) => {
+    if (!href) return false;
+    return (
+      currentHash === href ||
+      (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
+      (href === "#inventario" && currentHash.startsWith("#inventario"))
+    );
+  };
+
+  const isMenuExpanded = (label: string) => expandedMenu === label;
 
   const filteredItems = NAV_ITEMS.filter((item) => 
     rol && item.roles.includes(rol)
@@ -75,15 +91,86 @@ export function Sidebar() {
       </div>
       <nav className="side-nav">
         {filteredItems.map((item) => (
-          <a 
-            key={item.label}
-            className={`side-nav__item ${isActive(item.href) ? "side-nav__item--active" : ""}`}
-            href={item.href}
-            style={{ display: "flex", alignItems: "center", gap: "12px" }}
-          >
-            {item.icon}
-            {item.label}
-          </a>
+          <div key={item.label}>
+            {item.items ? (
+              <button
+                type="button"
+                onClick={() => setExpandedMenu(isMenuExpanded(item.label) ? null : item.label)}
+                className={`side-nav__item ${isMenuExpanded(item.label) ? "side-nav__item--active" : ""}`}
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "12px",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  width: "100%",
+                  padding: "12px 16px",
+                  justifyContent: "space-between",
+                  color: "inherit",
+                  font: "inherit",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  {item.icon}
+                  {item.label}
+                </span>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{
+                    transform: isMenuExpanded(item.label) ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.3s ease",
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            ) : (
+              <a 
+                className={`side-nav__item ${isActive(item.href) ? "side-nav__item--active" : ""}`}
+                href={item.href}
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
+                {item.icon}
+                {item.label}
+              </a>
+            )}
+            {item.items && isMenuExpanded(item.label) && (
+              <div style={{ display: "grid", gap: "4px", paddingLeft: "24px", marginTop: "4px" }}>
+                {item.items.map((subitem) => (
+                  <a
+                    key={subitem.label}
+                    href={subitem.href}
+                    className={`side-nav__item ${isActive(subitem.href) ? "side-nav__item--active" : ""}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      fontSize: "0.9rem",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      style={{ opacity: 0.6 }}
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    {subitem.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
       <button className="secondary-button sidebar__logout" type="button" onClick={logout}>
