@@ -1,5 +1,5 @@
 import { api } from "../api/client";
-import type { Usuario, Rol, PaginatedResponse, UsuarioEstado } from "../types";
+import type { Usuario, Rol, UsuarioEstado } from "../types";
 
 export type GetUsuariosParams = {
   rol?: Rol;
