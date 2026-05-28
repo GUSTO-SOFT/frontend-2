@@ -23,6 +23,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h18v18H3zM3 9h18M9 3v18"/></svg>
   },
   { 
+    label: "Inventario", 
+    href: "#inventario", 
+    roles: ["ADMIN"],
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M4 8h16"/></svg>
+  },
+  { 
     label: "Pedidos", 
     href: "#pedidos", 
     roles: ["ADMIN", "MESERO", "CAJERO"],
@@ -52,7 +58,9 @@ export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
   const isActive = (href: string) => (
-    currentHash === href || (href === "#pedidos" && currentHash.startsWith("#pedidos/"))
+    currentHash === href ||
+    (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
+    (href === "#inventario" && currentHash.startsWith("#inventario"))
   );
 
   const filteredItems = NAV_ITEMS.filter((item) => 

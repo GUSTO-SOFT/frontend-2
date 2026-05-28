@@ -54,6 +54,17 @@ export type Ingrediente = {
   nombre: string;
   unidadMedida?: string;
   unidad_medida?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  activo?: boolean;
+  imagen_url?: string;
+};
+
+export type CreateIngredienteData = {
+  nombre: string;
+  unidad_medida: "KG" | "G" | "L" | "ML" | "UNIDAD";
+  stock_actual: number;
+  stock_minimo: number;
 };
 
 export type Producto = {
