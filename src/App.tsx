@@ -8,11 +8,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
 import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
-import { GestionUsuariosPage } from "./pages/GestionUsuariosPage";
-import { InventarioPage } from "./pages/InventarioPage";
-import { CrearIngredientePage } from "./pages/CrearIngredientePage";
-import { MovimientosStockPage } from "./pages/MovimientosStockPage";
-import { Sidebar } from "./components/Sidebar";
+import { CuentaMesaPage } from "./pages/CuentaMesaPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -23,12 +19,7 @@ type Vista =
   | { nombre: "crear-producto" }
   | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" }
-  | { nombre: "inventario" }
-  | { nombre: "crear-ingrediente" }
-  | { nombre: "movimientos-stock" }
-  | { nombre: "pedidos" }
-  | { nombre: "usuarios" }
-  | { nombre: "caja" };
+  | { nombre: "cuenta-mesa"; mesa: Mesa };
 
 function vistaDesdeHash(): Vista {
   const hash = window.location.hash;
@@ -44,44 +35,23 @@ function vistaDesdeHash(): Vista {
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
-  if (hash === "#mesas") return { nombre: "mesas" };
-  if (hash === "#inventario/nuevo") return { nombre: "crear-ingrediente" };
-  if (hash.startsWith("#inventario")) return { nombre: "inventario" };
-  if (hash === "#movimientos-stock") return { nombre: "movimientos-stock" };
-  if (hash === "#usuarios") return { nombre: "usuarios" };
-  if (hash === "#caja") return { nombre: "caja" };
-  if (hash === "#pedidos") return { nombre: "pedidos" };
-  
-  // Default inicial
   return { nombre: "mesas" };
 }
 
 export function App() {
-  const { isAuthenticated, usuario, rol } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [vista, setVista] = useState<Vista>(() => vistaDesdeHash());
 
   useEffect(() => {
     const handleHashChange = () => setVista(vistaDesdeHash());
+
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  if (!isAuthenticated) {
-    return <LoginPage />;
-  }
+  if (!isAuthenticated) return <LoginPage />;
 
-  // Enrutador basado en el estado 'vista'
   switch (vista.nombre) {
-    case "mesas":
-      return (rol === "ADMIN" || rol === "MESERO" || rol === "CAJERO") ? (
-        <MesasSalonPage
-          onCrearPedido={(mesa) => {
-            setVista({ nombre: "crear-pedido", mesa });
-            window.location.hash = "#crear-pedido";
-          }}
-        />
-      ) : <MenuPage />;
-
     case "crear-pedido":
       return (
         <CrearPedidoPage
@@ -112,7 +82,7 @@ export function App() {
       return <MenuPage />;
 
     case "crear-producto":
-      return rol === "ADMIN" ? <CrearProductoPage /> : <MenuPage />;
+      return <CrearProductoPage />;
 
     case "producto-detalle":
       return (
@@ -124,68 +94,37 @@ export function App() {
           }}
         />
       );
-
-    case "inventario":
-      return (rol === "ADMIN" || rol === "CHEF") ? <InventarioPage /> : <MenuPage />;
-
-    case "crear-ingrediente":
-      return rol === "ADMIN" ? <CrearIngredientePage /> : <MenuPage />;
-
-    case "movimientos-stock":
-      return rol === "ADMIN" ? <MovimientosStockPage /> : <MenuPage />;
-
     case "cocina":
-      return (rol === "ADMIN" || rol === "CHEF") ? <CocinaPage /> : <MenuPage />;
+      return <CocinaPage />;
 
-    case "usuarios":
-      return rol === "ADMIN" ? <GestionUsuariosPage /> : <MenuPage />;
+    case "cuenta-mesa":
+      return (
+        <CuentaMesaPage
+          mesa={vista.mesa}
+          onVolver={() => {
+            setVista({ nombre: "mesas" });
+            window.location.hash = "#mesas";
+          }}
+          onCuentaCerrada={() => {
+            setVista({ nombre: "mesas" });
+            window.location.hash = "#mesas";
+          }}
+        />
+      );
 
-    case "caja":
-      return (rol === "ADMIN" || rol === "CAJERO") ? (
-        <div className="app-shell">
-          <Sidebar />
-          <main className="main-panel">
-            <header className="topbar">
-              <h1>Panel de Caja</h1>
-              <div className="session-user">
-                <strong>{usuario?.nombre}</strong>
-                <span>{rol}</span>
-              </div>
-            </header>
-            <section className="content">
-              <div className="empty-state">
-                <h2>Módulo de Caja</h2>
-                <p>Este módulo está en desarrollo. Aquí se gestionarán los pagos y facturación.</p>
-              </div>
-            </section>
-          </main>
-        </div>
-      ) : <MenuPage />;
-
-    case "pedidos":
-      return (rol === "ADMIN" || rol === "MESERO" || rol === "CAJERO") ? (
-        <div className="app-shell">
-          <Sidebar />
-          <main className="main-panel">
-            <header className="topbar">
-              <h1>Gestión de Pedidos</h1>
-              <div className="session-user">
-                <strong>{usuario?.nombre}</strong>
-                <span>{rol}</span>
-              </div>
-            </header>
-            <section className="content">
-              <div className="empty-state">
-                <h2>Historial de Pedidos</h2>
-                <p>Este módulo está en desarrollo. Aquí podrás ver y gestionar todos los pedidos del restaurante.</p>
-              </div>
-            </section>
-          </main>
-        </div>
-      ) : <MenuPage />;
-
+    case "mesas":
     default:
-      if (rol === "CHEF") return <CocinaPage />;
-      return <MenuPage />;
+      return (
+        <MesasSalonPage
+          onCrearPedido={(mesa) => {
+            setVista({ nombre: "crear-pedido", mesa });
+            window.location.hash = "#crear-pedido";
+          }}
+          onVerCuenta={(mesa) => {
+            setVista({ nombre: "cuenta-mesa", mesa });
+            window.location.hash = "#cuenta-mesa";
+          }}
+        />
+      );
   }
 }

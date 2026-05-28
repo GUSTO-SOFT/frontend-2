@@ -19,9 +19,10 @@ type FilterState = "todas" | "disponibles" | "ocupadas";
 
 type Props = {
   onCrearPedido: (mesa: Mesa) => void;
+  onVerCuenta: (mesa: Mesa) => void;
 };
 
-export function MesasSalonPage({ onCrearPedido }: Props) {
+export function MesasSalonPage({ onCrearPedido, onVerCuenta }: Props) {
   const { usuario, rol } = useAuth();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [page, setPage] = useState(1);
@@ -172,7 +173,7 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
     setToast(message);
   }
 
-  const canViewTables = rol === "ADMIN" || rol === "MESERO";
+  const canViewTables = rol === "ADMIN" || rol === "MESERO" || rol === "CAJERO";
   const canCreateTable = rol === "ADMIN";
 
   return (
@@ -278,6 +279,7 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
                       onAbrirMesa={handleAbrirMesa}
                       onAsignarMesero={handleAsignarMesero}
                       onCrearPedido={onCrearPedido}
+                      onVerCuenta={onVerCuenta}
                     />
                   ))}
                 </div>
