@@ -5,6 +5,7 @@ import type { Rol } from "../types";
 type SubItem = {
   label: string;
   href: string;
+  roles?: Rol[];
 };
 
 type NavItem = {
@@ -19,7 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { 
     label: "Menú", 
     href: "#menu", 
-    roles: ["ADMIN", "MESERO", "CHEF", "CAJERO"],
+    roles: ["ADMIN"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
   },
   { 
@@ -30,11 +31,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     label: "Inventario", 
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "MESERO", "CHEF"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M4 8h16"/></svg>,
     items: [
-      { label: "Gestión de Ingredientes", href: "#inventario" },
-      { label: "Movimientos de Stock", href: "#movimientos-stock" },
+      { label: "Gestión de Ingredientes", href: "#inventario", roles: ["ADMIN"] },
+      { label: "Alertas de Stock", href: "#inventario/alertas", roles: ["ADMIN", "CHEF"] },
+      { label: "Movimientos de Stock", href: "#movimientos-stock", roles: ["ADMIN"] },
     ]
   },
   { 
@@ -142,7 +144,9 @@ export function Sidebar() {
             )}
             {item.items && isMenuExpanded(item.label) && (
               <div style={{ display: "grid", gap: "4px", paddingLeft: "24px", marginTop: "4px" }}>
-                {item.items.map((subitem) => (
+                {item.items
+                  .filter((subitem) => !subitem.roles || (rol && subitem.roles.includes(rol)))
+                  .map((subitem) => (
                   <a
                     key={subitem.label}
                     href={subitem.href}

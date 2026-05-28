@@ -45,8 +45,8 @@ function vistaDesdeHash(): Vista {
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
   if (hash === "#mesas") return { nombre: "mesas" };
-  if (hash === "#inventario") return { nombre: "inventario" };
   if (hash === "#inventario/nuevo") return { nombre: "crear-ingrediente" };
+  if (hash.startsWith("#inventario")) return { nombre: "inventario" };
   if (hash === "#movimientos-stock") return { nombre: "movimientos-stock" };
   if (hash === "#usuarios") return { nombre: "usuarios" };
   if (hash === "#caja") return { nombre: "caja" };
@@ -126,7 +126,7 @@ export function App() {
       );
 
     case "inventario":
-      return rol === "ADMIN" ? <InventarioPage /> : <MenuPage />;
+      return (rol === "ADMIN" || rol === "CHEF") ? <InventarioPage /> : <MenuPage />;
 
     case "crear-ingrediente":
       return rol === "ADMIN" ? <CrearIngredientePage /> : <MenuPage />;

@@ -98,8 +98,23 @@ export type CreateProductoData = {
   nombre: string;
   categoria: CategoriaProducto;
   precio: number;
-  tiempo_preparacion: number;
-  ingredientes: number[];
+  tiempo_preparacion?: number;
+  ingredientes: { ingrediente_id: number; cantidad: number }[];
+};
+
+export type AlertaInventario = {
+  id: number;
+  ingrediente_id: number;
+  nombre: string;
+  stock_actual: number;
+  stock_minimo: number;
+  generada_at: string;
+};
+
+export type BloqueoProducto = {
+  bloqueado: boolean;
+  motivo: string | null;
+  ingredientes_agotados: { id: number; nombre: string }[];
 };
 
 export type ApiErrorBody = {

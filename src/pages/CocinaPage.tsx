@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { cocinaService } from "../services/cocinaService";
 import { updateEstadoPedido } from "../services/pedidosService";
+import { AlertasBanner } from "../components/AlertasBanner";
 import type { Pedido } from "../types";
 
 import { Toast } from "../components/Toast";
@@ -66,6 +67,7 @@ export function CocinaPage() {
         </header>
 
         <div className="content">
+        <AlertasBanner />
         {error && <div className="error-message">{error}</div>}
         
         {loading && pedidos.length === 0 ? (

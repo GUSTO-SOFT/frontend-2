@@ -11,9 +11,10 @@ type Props = {
   totalItems: number;
   onAjusteSuccess?: (message: string) => void;
   onRefresh?: () => void;
+  canAdjust?: boolean;
 };
 
-export function ListaIngredientes({ ingredientes, loading, page, totalPages, onPageChange, totalItems, onAjusteSuccess, onRefresh }: Props) {
+export function ListaIngredientes({ ingredientes, loading, page, totalPages, onPageChange, totalItems, onAjusteSuccess, onRefresh, canAdjust = true }: Props) {
   const [selectedIngrediente, setSelectedIngrediente] = useState<Ingrediente | null>(null);
   const [showModal, setShowModal] = useState(false);
   return (
@@ -60,6 +61,8 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
             ingredientes.map((ingrediente) => {
               const unidad = ingrediente.unidad_medida ?? ingrediente.unidadMedida ?? "";
               const imageSrc = ingrediente.imagen_url;
+              const stockActual = Number(ingrediente.stock_actual ?? (ingrediente as any).stockActual ?? 0);
+              const stockMinimo = Number(ingrediente.stock_minimo ?? (ingrediente as any).stockMinimo ?? 0);
               return (
                 <tr key={ingrediente.id} style={{ borderTop: "1px solid #eef2f7" }}>
                   <td style={{ padding: "18px 24px", display: "flex", alignItems: "center", gap: "16px" }}>
@@ -76,10 +79,10 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
                   </td>
                   <td style={{ padding: "18px 24px" }}>{unidad}</td>
                   <td style={{ padding: "18px 24px", textAlign: "right", fontWeight: 700 }}>
-                    {ingrediente.stock_actual?.toFixed(3) ?? "0.000"}
+                    {stockActual.toFixed(3)}
                   </td>
                   <td style={{ padding: "18px 24px", textAlign: "right", fontWeight: 700 }}>
-                    {ingrediente.stock_minimo?.toFixed(3) ?? "0.000"}
+                    {stockMinimo.toFixed(3)}
                   </td>
                   <td style={{ padding: "18px 24px", textAlign: "center" }}>
                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "90px", padding: "8px 12px", borderRadius: "999px", background: ingrediente.activo ? "#e6f7ed" : "#fff0f1", color: ingrediente.activo ? "#047857" : "#b91c1c", fontWeight: 700, fontSize: "0.85rem" }}>
@@ -87,25 +90,29 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
                     </span>
                   </td>
                   <td style={{ padding: "18px 24px", textAlign: "center" }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedIngrediente(ingrediente);
-                        setShowModal(true);
-                      }}
-                      style={{
-                        background: "#d1141f",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "8px",
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Ajustar
-                    </button>
+                    {canAdjust ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedIngrediente(ingrediente);
+                          setShowModal(true);
+                        }}
+                        style={{
+                          background: "#d1141f",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "8px",
+                          padding: "8px 16px",
+                          cursor: "pointer",
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Ajustar
+                      </button>
+                    ) : (
+                      <span style={{ color: "#98a2b3", fontWeight: 700, fontSize: "0.85rem" }}>—</span>
+                    )}
                   </td>
                 </tr>
               );
@@ -154,7 +161,7 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
         </button>
       </div>
 
-      {selectedIngrediente && (
+      {selectedIngrediente && canAdjust && (
         <AjusteStockModal
           ingrediente={selectedIngrediente}
           isOpen={showModal}
