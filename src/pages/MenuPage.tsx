@@ -145,9 +145,7 @@ export function MenuPage() {
                   boxShadow: filter === cat ? "0 10px 20px rgba(209, 20, 31, 0.2)" : "none"
                 }}
               >
-                <div style={{ 
-                  color: filter === cat ? "#fff" : (filter === "TODOS" ? "#8a6d3b" : "#8a6d3b") 
-                }}>
+                <div style={{ color: filter === cat ? "#fff" : "#8a6d3b" }}>
                   {CATEGORY_ICONS[cat]}
                 </div>
                 <span style={{ fontWeight: "700", fontSize: "0.9rem" }}>
