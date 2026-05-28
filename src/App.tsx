@@ -11,6 +11,7 @@ import { CocinaPage } from "./pages/CocinaPage";
 import { GestionUsuariosPage } from "./pages/GestionUsuariosPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { CrearIngredientePage } from "./pages/CrearIngredientePage";
+import { MovimientosStockPage } from "./pages/MovimientosStockPage";
 import { Sidebar } from "./components/Sidebar";
 import type { Mesa } from "./types";
 
@@ -24,6 +25,7 @@ type Vista =
   | { nombre: "cocina" }
   | { nombre: "inventario" }
   | { nombre: "crear-ingrediente" }
+  | { nombre: "movimientos-stock" }
   | { nombre: "pedidos" }
   | { nombre: "usuarios" }
   | { nombre: "caja" };
@@ -45,6 +47,7 @@ function vistaDesdeHash(): Vista {
   if (hash === "#mesas") return { nombre: "mesas" };
   if (hash === "#inventario") return { nombre: "inventario" };
   if (hash === "#inventario/nuevo") return { nombre: "crear-ingrediente" };
+  if (hash === "#movimientos-stock") return { nombre: "movimientos-stock" };
   if (hash === "#usuarios") return { nombre: "usuarios" };
   if (hash === "#caja") return { nombre: "caja" };
   if (hash === "#pedidos") return { nombre: "pedidos" };
@@ -127,6 +130,9 @@ export function App() {
 
     case "crear-ingrediente":
       return rol === "ADMIN" ? <CrearIngredientePage /> : <MenuPage />;
+
+    case "movimientos-stock":
+      return rol === "ADMIN" ? <MovimientosStockPage /> : <MenuPage />;
 
     case "cocina":
       return (rol === "ADMIN" || rol === "CHEF") ? <CocinaPage /> : <MenuPage />;

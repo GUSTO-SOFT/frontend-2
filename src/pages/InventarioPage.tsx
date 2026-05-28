@@ -139,6 +139,8 @@ export function InventarioPage() {
               totalPages={totalPages}
               onPageChange={setPage}
               totalItems={totalItems}
+              onAjusteSuccess={(message) => setToast({ message, type: "success" })}
+              onRefresh={() => fetchIngredientes(page)}
             />
           </div>
         </section>
