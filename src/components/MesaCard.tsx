@@ -10,13 +10,15 @@ type Props = {
   onAbrirMesa: (mesa: Mesa) => void;
   onAsignarMesero: (mesa: Mesa) => void;
   onCrearPedido: (mesa: Mesa) => void;
+  onVerCuenta: (mesa: Mesa) => void;
 };
 
-export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMesero, onCrearPedido }: Props) {
+export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMesero, onCrearPedido, onVerCuenta }: Props) {
   const isWorker = rol === "MESERO" || rol === "ADMIN";
   const canOpen = mesa.estado === "DISPONIBLE" && isWorker;
   const canAssign = mesa.estado === "OCUPADA" && isWorker;
   const canOrder = mesa.estado === "OCUPADA" && isWorker;
+  const canVerCuenta = mesa.estado === "OCUPADA" && (rol === "ADMIN" || rol === "CAJERO");
 
   return (
     <article className={`mesa-card mesa-card--${mesa.estado_color}`}>
@@ -69,6 +71,16 @@ export function MesaCard({ mesa, rol, now, isOpening, onAbrirMesa, onAsignarMese
             style={{ marginTop: "8px" }}
           >
             Nuevo Pedido
+          </button>
+        )}
+        {canVerCuenta && (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => onVerCuenta(mesa)}
+            style={{ marginTop: "8px" }}
+          >
+            Ver Cuenta
           </button>
         )}
       </div>
