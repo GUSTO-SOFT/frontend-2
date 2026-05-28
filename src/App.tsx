@@ -8,6 +8,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
 import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
+import { GestionUsuariosPage } from "./pages/GestionUsuariosPage";
 import { Sidebar } from "./components/Sidebar";
 import type { Mesa } from "./types";
 
@@ -20,6 +21,7 @@ type Vista =
   | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" }
   | { nombre: "pedidos" }
+  | { nombre: "usuarios" }
   | { nombre: "caja" };
 
 function vistaDesdeHash(): Vista {
@@ -37,6 +39,7 @@ function vistaDesdeHash(): Vista {
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
   if (hash === "#mesas") return { nombre: "mesas" };
+  if (hash === "#usuarios") return { nombre: "usuarios" };
   if (hash === "#caja") return { nombre: "caja" };
   if (hash === "#pedidos") return { nombre: "pedidos" };
   
@@ -115,6 +118,9 @@ export function App() {
 
     case "cocina":
       return (rol === "ADMIN" || rol === "CHEF") ? <CocinaPage /> : <MenuPage />;
+
+    case "usuarios":
+      return rol === "ADMIN" ? <GestionUsuariosPage /> : <MenuPage />;
 
     case "caja":
       return (rol === "ADMIN" || rol === "CAJERO") ? (
