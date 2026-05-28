@@ -72,6 +72,7 @@ export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
 export type MovimientoStock = {
   id: number;
   ingrediente_id: number;
+  ingrediente_nombre?: string;
   tipo: MovimientoStockTipo;
   cantidad: number;
   motivo: string;
@@ -79,6 +80,12 @@ export type MovimientoStock = {
   usuario_nombre?: string;
   fecha_utc: string;
   created_at: string;
+};
+
+export type AjusteStockResponse = {
+  ingrediente_id: number;
+  stock_actual: number;
+  movimiento: MovimientoStock;
 };
 
 export type Producto = {
