@@ -12,6 +12,7 @@ import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
 import { FacturaElectronicaPage } from "./pages/FacturaElectronicaPage";
 import { CuentaMesaPage } from "./pages/CuentaMesaPage";
+import { ReportePlatosMasVendidosPage } from "./pages/ReportePlatosMasVendidosPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -23,6 +24,7 @@ type Vista =
   | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" }
   | { nombre: "factura-electronica"; facturaId: number | null }
+  | { nombre: "reporte-platos-mas-vendidos" }
   | { nombre: "cuenta-mesa"; mesa: Mesa };
 
 type AuthVista =
@@ -45,6 +47,7 @@ function vistaDesdeHash(): Vista {
   if (facturaMatch) {
     return { nombre: "factura-electronica", facturaId: facturaMatch[1] ? Number(facturaMatch[1]) : null };
   }
+  if (hash === "#reporte-platos-mas-vendidos") return { nombre: "reporte-platos-mas-vendidos" };
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
@@ -151,6 +154,9 @@ export function App() {
           }}
         />
       );
+
+    case "reporte-platos-mas-vendidos":
+      return <ReportePlatosMasVendidosPage />;
 
     case "cuenta-mesa":
       return (

@@ -64,6 +64,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   },
   { 
+    label: "Platos vendidos", 
+    href: "#reporte-platos-mas-vendidos", 
+    roles: ["ADMIN"],
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 2 5-6"/></svg>
+  },
+  { 
     label: "Factura", 
     href: "#factura-electronica", 
     roles: ["ADMIN"],
@@ -82,6 +88,7 @@ export function Sidebar() {
       currentHash === href ||
       (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
       (href === "#inventario" && currentHash.startsWith("#inventario")) ||
+      (href === "#reporte-platos-mas-vendidos" && currentHash.startsWith("#reporte-platos-mas-vendidos")) ||
       (href === "#factura-electronica" && currentHash.startsWith("#factura-electronica"))
     );
   };
