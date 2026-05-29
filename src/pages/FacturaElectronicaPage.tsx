@@ -66,7 +66,8 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
     const sorted = [...envios].sort((a, b) => {
       const aTime = a.sent_at ? new Date(a.sent_at).getTime() : 0;
       const bTime = b.sent_at ? new Date(b.sent_at).getTime() : 0;
-      return bTime - aTime;
+      if (bTime !== aTime) return bTime - aTime;
+      return b.id - a.id;
     });
     return sorted[0] ?? null;
   }, [envios]);
@@ -161,9 +162,16 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
     setSending(true);
     try {
       const envio = await enviarFacturaPorCorreo(facturaId, email);
-      setToast({ message: "Factura enviada por correo.", type: "success" });
-      setEmail("");
       setEnvios((prev) => [envio, ...prev]);
+      if (envio.estado === "ENVIADO") {
+        setToast({ message: "Factura enviada por correo.", type: "success" });
+        setEmail("");
+      } else {
+        setToast({
+          message: envio.detalle_error ?? "No se pudo enviar la factura por correo.",
+          type: "error",
+        });
+      }
     } catch (err) {
       setToast({ message: parseApiMessage(err) ?? "No se pudo enviar la factura por correo.", type: "error" });
     } finally {
@@ -339,4 +347,3 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
     </div>
   );
 }
-
