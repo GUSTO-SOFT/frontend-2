@@ -76,6 +76,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14v4"/><path d="M12 10v8"/><path d="M17 6v12"/></svg>
   },
   { 
+    label: "Desperdicio insumos", 
+    href: "#reporte-desperdicio-insumos", 
+    roles: ["ADMIN"],
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 2.3l-8 14A2 2 0 0 0 4 19h16a2 2 0 0 0 1.7-2.7l-8-14a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+  },
+  { 
     label: "Factura", 
     href: "#factura-electronica", 
     roles: ["ADMIN"],
@@ -96,6 +102,7 @@ export function Sidebar() {
       (href === "#inventario" && currentHash.startsWith("#inventario")) ||
       (href === "#reporte-platos-mas-vendidos" && currentHash.startsWith("#reporte-platos-mas-vendidos")) ||
       (href === "#reporte-horas-mayor-afluencia" && currentHash.startsWith("#reporte-horas-mayor-afluencia")) ||
+      (href === "#reporte-desperdicio-insumos" && currentHash.startsWith("#reporte-desperdicio-insumos")) ||
       (href === "#factura-electronica" && currentHash.startsWith("#factura-electronica"))
     );
   };

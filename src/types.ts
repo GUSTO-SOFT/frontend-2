@@ -137,6 +137,16 @@ export type ReporteAfluenciaResponse = {
   resumen: ReporteAfluenciaResumen;
 };
 
+export type ReporteDesperdicioRow = {
+  ingrediente_id: number;
+  nombre: string;
+  consumo_teorico: number;
+  consumo_real: number;
+  diferencia: number;
+  porcentaje_desperdicio: number;
+  alerta: boolean;
+};
+
 export type Producto = {
   id: number;
   nombre: string;

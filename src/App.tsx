@@ -14,6 +14,7 @@ import { FacturaElectronicaPage } from "./pages/FacturaElectronicaPage";
 import { CuentaMesaPage } from "./pages/CuentaMesaPage";
 import { ReportePlatosMasVendidosPage } from "./pages/ReportePlatosMasVendidosPage";
 import { ReporteHorasMayorAfluenciaPage } from "./pages/ReporteHorasMayorAfluenciaPage";
+import { ReporteDesperdicioInsumosPage } from "./pages/ReporteDesperdicioInsumosPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -27,6 +28,7 @@ type Vista =
   | { nombre: "factura-electronica"; facturaId: number | null }
   | { nombre: "reporte-platos-mas-vendidos" }
   | { nombre: "reporte-horas-mayor-afluencia" }
+  | { nombre: "reporte-desperdicio-insumos" }
   | { nombre: "cuenta-mesa"; mesa: Mesa };
 
 type AuthVista =
@@ -51,6 +53,7 @@ function vistaDesdeHash(): Vista {
   }
   if (hash === "#reporte-platos-mas-vendidos") return { nombre: "reporte-platos-mas-vendidos" };
   if (hash === "#reporte-horas-mayor-afluencia") return { nombre: "reporte-horas-mayor-afluencia" };
+  if (hash === "#reporte-desperdicio-insumos") return { nombre: "reporte-desperdicio-insumos" };
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
@@ -163,6 +166,9 @@ export function App() {
 
     case "reporte-horas-mayor-afluencia":
       return <ReporteHorasMayorAfluenciaPage />;
+
+    case "reporte-desperdicio-insumos":
+      return <ReporteDesperdicioInsumosPage />;
 
     case "cuenta-mesa":
       return (
