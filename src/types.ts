@@ -107,6 +107,13 @@ export type BloqueoProducto = {
   ingredientes_agotados: { id: number; nombre: string }[];
 };
 
+export type ReporteProductoVendidoRow = {
+  producto_id: number;
+  nombre: string;
+  total_unidades: number;
+  ingreso_total: number;
+};
+
 export type Producto = {
   id: number;
   nombre: string;
