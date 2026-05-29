@@ -22,6 +22,11 @@ export async function getPedido(id: number) {
   return data;
 }
 
+export async function updateEstadoPedido(id: number, estado: string) {
+  const { data } = await api.patch<Pedido>(`/pedidos/${id}/estado`, { estado });
+  return data;
+}
+
 type ActualizarDetallesPedidoBody = {
   detalles: DetallePedido[];
 };
@@ -33,5 +38,10 @@ export async function actualizarDetallesPedido(id: number, body: ActualizarDetal
 
 export async function enviarPedido(id: number) {
   const { data } = await api.post<Pedido>(`/pedidos/${id}/enviar`);
+  return data;
+}
+
+export async function confirmarEntrega(id: number) {
+  const { data } = await api.patch<Pedido>(`/pedidos/${id}/confirmar-entrega`);
   return data;
 }

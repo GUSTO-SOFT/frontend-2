@@ -1,14 +1,19 @@
-export type Rol = "ADMIN" | "MESERO" | "CHEF";
+export type Rol = "ADMIN" | "MESERO" | "CHEF" | "CAJERO";
 
 export type MesaEstado = "DISPONIBLE" | "OCUPADA";
 
 export type MesaEstadoColor = "verde" | "rojo";
+
+export type UsuarioEstado = "ACTIVO" | "INACTIVO";
 
 export type Usuario = {
   id: number;
   nombre: string;
   email: string;
   rol: Rol;
+  estado?: UsuarioEstado;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Mesa = {
@@ -49,6 +54,57 @@ export type Ingrediente = {
   nombre: string;
   unidadMedida?: string;
   unidad_medida?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  activo?: boolean;
+  imagen_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreateIngredienteData = {
+  nombre: string;
+  unidad_medida: string;
+  stock_actual: number;
+  stock_minimo: number;
+};
+
+export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
+
+export type MovimientoStock = {
+  id: number;
+  ingrediente_id?: number | null;
+  tipo: MovimientoStockTipo;
+  cantidad: number;
+  motivo: string;
+  fecha_utc: string;
+  usuario_id?: number | null;
+  ingrediente_nombre?: string;
+  usuario_nombre?: string;
+};
+
+export type AjusteStockResponse = {
+  ingrediente_id: number;
+  stock_actual: number;
+  delta?: number;
+  motivo?: string;
+  fecha_utc?: string;
+};
+
+export type AlertaInventario = {
+  id: number;
+  ingrediente_id: number;
+  nombre: string;
+  stock_actual: number;
+  stock_minimo: number;
+  generada_at: string;
+};
+
+export type BloqueoProducto = {
+  producto_id: number;
+  bloqueado: boolean;
+  motivo: string;
+  ingredientes_agotados: { id: number; nombre: string }[];
 };
 
 export type Producto = {
@@ -135,4 +191,31 @@ export type Pedido = {
   updated_at: string;
   hace_minutos?: number;
   resaltar_por_antiguedad?: boolean;
+};
+
+export type DescuentoTipo = "PORCENTAJE" | "VALOR_FIJO";
+
+export type CuentaEstado = "ABIERTA" | "CERRADA";
+
+export type CuentaItem = {
+  producto_id: number;
+  producto: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+};
+
+export type Cuenta = {
+  id: number;
+  mesa_id: number;
+  estado: CuentaEstado;
+  items: CuentaItem[];
+  impuestos: number;
+  total_bruto: number;
+  descuento: number;
+  descuento_tipo?: DescuentoTipo;
+  descuento_motivo?: string;
+  total_neto: number;
+  closed_at?: string;
+  cajero_id?: number;
 };

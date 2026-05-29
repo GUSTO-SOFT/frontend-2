@@ -11,6 +11,7 @@ import { CrearProductoPage } from "./pages/CrearProductoPage";
 import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
 import { FacturaElectronicaPage } from "./pages/FacturaElectronicaPage";
+import { CuentaMesaPage } from "./pages/CuentaMesaPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -21,7 +22,8 @@ type Vista =
   | { nombre: "crear-producto" }
   | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" }
-  | { nombre: "factura-electronica"; facturaId: number | null };
+  | { nombre: "factura-electronica"; facturaId: number | null }
+  | { nombre: "cuenta-mesa"; mesa: Mesa };
 
 type AuthVista =
   | { nombre: "login" }
@@ -150,6 +152,21 @@ export function App() {
         />
       );
 
+    case "cuenta-mesa":
+      return (
+        <CuentaMesaPage
+          mesa={vista.mesa}
+          onVolver={() => {
+            setVista({ nombre: "mesas" });
+            window.location.hash = "#mesas";
+          }}
+          onCuentaCerrada={() => {
+            setVista({ nombre: "mesas" });
+            window.location.hash = "#mesas";
+          }}
+        />
+      );
+
     case "mesas":
     default:
       return (
@@ -157,6 +174,10 @@ export function App() {
           onCrearPedido={(mesa) => {
             setVista({ nombre: "crear-pedido", mesa });
             window.location.hash = "#crear-pedido";
+          }}
+          onVerCuenta={(mesa) => {
+            setVista({ nombre: "cuenta-mesa", mesa });
+            window.location.hash = "#cuenta-mesa";
           }}
         />
       );

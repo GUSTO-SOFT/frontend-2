@@ -1,11 +1,13 @@
+import axios from "axios";
 import { FormEvent, useState } from "react";
 import { loginRequest } from "../services/authService";
 import { useAuth } from "../auth/AuthContext";
+import type { ApiErrorBody } from "../types";
 
 export function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("admin@gustosoft.local");
-  const [password, setPassword] = useState("Password123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -17,8 +19,15 @@ export function LoginPage() {
     try {
       const response = await loginRequest(email, password);
       login(response.usuario, response.access_token);
-    } catch {
-      setError("Credenciales incorrectas. Revisa el correo y la contrasena.");
+      
+      // La redirección se maneja en App.tsx basándose en el estado de autenticación y rol
+    } catch (err) {
+      if (axios.isAxiosError<ApiErrorBody>(err)) {
+        const message = err.response?.data?.message;
+        setError(Array.isArray(message) ? message[0] : message || "Credenciales incorrectas");
+      } else {
+        setError("Error de conexión con el servidor");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -54,12 +63,12 @@ export function LoginPage() {
 
           <form className="login-form" onSubmit={handleSubmit}>
             <label className="form-field">
-              Usuario
+              Correo Electrónico
               <input
-                type="text"
+                type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="Nombre de usuario"
+                placeholder="ejemplo@gustosoft.com"
                 required
               />
             </label>

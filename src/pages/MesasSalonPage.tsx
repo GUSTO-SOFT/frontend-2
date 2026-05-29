@@ -5,6 +5,7 @@ import { MesaCard } from "../components/MesaCard";
 import { MesaSkeleton } from "../components/MesaSkeleton";
 import { Toast } from "../components/Toast";
 import { AsignarMeseroModal } from "../components/AsignarMeseroModal";
+import { CrearMesaModal } from "../components/CrearMesaModal";
 import { Sidebar } from "../components/Sidebar";
 import { ConexionEstadoBadge } from "../components/ConexionEstadoBadge";
 import { useMesasSocket } from "../hooks/useMesasSocket";
@@ -18,9 +19,10 @@ type FilterState = "todas" | "disponibles" | "ocupadas";
 
 type Props = {
   onCrearPedido: (mesa: Mesa) => void;
+  onVerCuenta: (mesa: Mesa) => void;
 };
 
-export function MesasSalonPage({ onCrearPedido }: Props) {
+export function MesasSalonPage({ onCrearPedido, onVerCuenta }: Props) {
   const { usuario, rol } = useAuth();
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [page, setPage] = useState(1);
@@ -28,6 +30,7 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
   const [loading, setLoading] = useState(true);
   const [openingId, setOpeningId] = useState<number | null>(null);
   const [assigningMesa, setAssigningMesa] = useState<Mesa | null>(null);
+  const [isCreatingMesa, setIsCreatingMesa] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   const [search, setSearch] = useState("");
@@ -170,7 +173,8 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
     setToast(message);
   }
 
-  const canViewTables = rol === "ADMIN" || rol === "MESERO";
+  const canViewTables = rol === "ADMIN" || rol === "MESERO" || rol === "CAJERO";
+  const canCreateTable = rol === "ADMIN";
 
   return (
     <div className="app-shell">
@@ -205,6 +209,23 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
             <>
               <div className="toolbar">
                 <div className="filters">
+                  {canCreateTable && (
+                    <button
+                      type="button"
+                      className="filter-pill"
+                      onClick={() => setIsCreatingMesa(true)}
+                      style={{
+                        background: "#d1141f",
+                        borderColor: "#d1141f",
+                        color: "#fff",
+                        minHeight: "44px",
+                        padding: "0 18px",
+                        fontWeight: 800,
+                      }}
+                    >
+                      + Nueva mesa
+                    </button>
+                  )}
                   <button
                     type="button"
                     className={`filter-pill ${filter === "todas" ? "filter-pill--active" : ""}`}
@@ -258,6 +279,7 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
                       onAbrirMesa={handleAbrirMesa}
                       onAsignarMesero={handleAsignarMesero}
                       onCrearPedido={onCrearPedido}
+                      onVerCuenta={onVerCuenta}
                     />
                   ))}
                 </div>
@@ -292,6 +314,18 @@ export function MesasSalonPage({ onCrearPedido }: Props) {
             onClose={() => setAssigningMesa(null)}
             onSuccess={handleAssignmentSuccess}
             onError={handleAssignmentError}
+          />
+        )}
+
+        {isCreatingMesa && canCreateTable && (
+          <CrearMesaModal
+            onClose={() => setIsCreatingMesa(false)}
+            onSuccess={() => {
+              setToast("Mesa creada correctamente");
+              void fetchMesas();
+              void loadTotals();
+            }}
+            onError={setToast}
           />
         )}
       </main>
