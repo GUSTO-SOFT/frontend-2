@@ -451,6 +451,44 @@ button {
   background: #ffd3d3;
 }
 
+.estado-badge--amarillo {
+  color: #b54708;
+  background: #fef0c7;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(102, 112, 133, 0.3);
+  border-top-color: #d1141f;
+  animation: spin 0.8s linear infinite;
+}
+
+.expandable summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: #141a2d;
+}
+
+.code-block {
+  margin: 12px 0 0;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #e7ebf3;
+  background: #0b1220;
+  color: #e6edf3;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mesa-card h3 {
   margin: 12px 0 6px;
   font-size: 1.1rem;

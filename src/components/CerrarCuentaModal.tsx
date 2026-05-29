@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { Cuenta } from "../types";
 import { formatCurrency } from "../utils/format";
 

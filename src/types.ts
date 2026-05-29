@@ -4,11 +4,16 @@ export type MesaEstado = "DISPONIBLE" | "OCUPADA";
 
 export type MesaEstadoColor = "verde" | "rojo";
 
+export type UsuarioEstado = "ACTIVO" | "INACTIVO";
+
 export type Usuario = {
   id: number;
   nombre: string;
   email: string;
   rol: Rol;
+  estado?: UsuarioEstado;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type Mesa = {
@@ -49,6 +54,57 @@ export type Ingrediente = {
   nombre: string;
   unidadMedida?: string;
   unidad_medida?: string;
+  stock_actual?: number;
+  stock_minimo?: number;
+  activo?: boolean;
+  imagen_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type CreateIngredienteData = {
+  nombre: string;
+  unidad_medida: string;
+  stock_actual: number;
+  stock_minimo: number;
+};
+
+export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
+
+export type MovimientoStock = {
+  id: number;
+  ingrediente_id?: number | null;
+  tipo: MovimientoStockTipo;
+  cantidad: number;
+  motivo: string;
+  fecha_utc: string;
+  usuario_id?: number | null;
+  ingrediente_nombre?: string;
+  usuario_nombre?: string;
+};
+
+export type AjusteStockResponse = {
+  ingrediente_id: number;
+  stock_actual: number;
+  delta?: number;
+  motivo?: string;
+  fecha_utc?: string;
+};
+
+export type AlertaInventario = {
+  id: number;
+  ingrediente_id: number;
+  nombre: string;
+  stock_actual: number;
+  stock_minimo: number;
+  generada_at: string;
+};
+
+export type BloqueoProducto = {
+  producto_id: number;
+  bloqueado: boolean;
+  motivo: string;
+  ingredientes_agotados: { id: number; nombre: string }[];
 };
 
 export type Producto = {
@@ -76,6 +132,30 @@ export type ApiErrorBody = {
   error?: string;
   message?: string | string[];
   statusCode?: number;
+};
+
+export type FacturaEstado = "ACEPTADA" | "RECHAZADA" | "PENDIENTE_REINTENTO";
+
+export type FacturaEnvioEstado = "ENVIADO" | "ERROR";
+
+export type FacturaEstadoResponse = {
+  id: number;
+  cuenta_id: number;
+  cufe: string | null;
+  estado: FacturaEstado;
+  timestamp_utc: string;
+  error_body: unknown | null;
+  intentos: number;
+  next_retry_at: string | null;
+};
+
+export type FacturaEnvioResponse = {
+  id: number;
+  factura_id: number;
+  email_destino: string;
+  estado: FacturaEnvioEstado;
+  detalle_error: string | null;
+  sent_at: string | null;
 };
 
 export type PedidoEstado =

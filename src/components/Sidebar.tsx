@@ -63,6 +63,12 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   },
+  { 
+    label: "Factura", 
+    href: "#factura-electronica", 
+    roles: ["ADMIN"],
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
+  },
 ];
 
 export function Sidebar() {
@@ -75,7 +81,8 @@ export function Sidebar() {
     return (
       currentHash === href ||
       (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
-      (href === "#inventario" && currentHash.startsWith("#inventario"))
+      (href === "#inventario" && currentHash.startsWith("#inventario")) ||
+      (href === "#factura-electronica" && currentHash.startsWith("#factura-electronica"))
     );
   };
 
