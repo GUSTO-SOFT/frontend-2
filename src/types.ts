@@ -114,6 +114,29 @@ export type ReporteProductoVendidoRow = {
   ingreso_total: number;
 };
 
+export type ReporteAfluenciaRow = {
+  franja_inicio: string;
+  franja_fin: string;
+  total_pedidos: number;
+  total_mesas_abiertas: number;
+  is_pico: boolean;
+};
+
+export type ReporteAfluenciaResumen = {
+  percentil_75: number;
+  franja_pico_absoluto: {
+    franja_inicio: string;
+    franja_fin: string;
+    total_pedidos: number;
+    total_mesas_abiertas: number;
+  } | null;
+};
+
+export type ReporteAfluenciaResponse = {
+  data: ReporteAfluenciaRow[];
+  resumen: ReporteAfluenciaResumen;
+};
+
 export type Producto = {
   id: number;
   nombre: string;
