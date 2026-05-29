@@ -1,26 +1,13 @@
 import axios from "axios";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { FiltrosFecha } from "../components/FiltrosFecha";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { descargarProductosVendidosCsv, descargarProductosVendidosPdf, getProductosVendidos } from "../services/reportesService";
 import type { ApiErrorBody, ReporteProductoVendidoRow } from "../types";
+import { defaultDateFrom, defaultDateTo, toUtcEndIso, toUtcStartIso } from "../utils/dateRange";
 import { formatCurrency } from "../utils/format";
-
-function formatIsoDateInput(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function toUtcStartIso(dateInput: string) {
-  return `${dateInput}T00:00:00.000Z`;
-}
-
-function toUtcEndIso(dateInput: string) {
-  return `${dateInput}T23:59:59.999Z`;
-}
 
 function parseApiMessage(error: unknown) {
   if (!axios.isAxiosError<ApiErrorBody>(error)) return null;
@@ -44,12 +31,8 @@ function downloadBlob(blob: Blob, filename: string) {
 
 export function ReportePlatosMasVendidosPage() {
   const { usuario, rol } = useAuth();
-  const [dateFrom, setDateFrom] = useState(() => {
-    const today = new Date();
-    const from = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return formatIsoDateInput(from);
-  });
-  const [dateTo, setDateTo] = useState(() => formatIsoDateInput(new Date()));
+  const [dateFrom, setDateFrom] = useState(() => defaultDateFrom(30));
+  const [dateTo, setDateTo] = useState(() => defaultDateTo());
   const [rangeError, setRangeError] = useState<string | null>(null);
 
   const [rows, setRows] = useState<ReporteProductoVendidoRow[]>([]);
@@ -162,42 +145,37 @@ export function ReportePlatosMasVendidosPage() {
           <div style={{ display: "grid", gap: "18px", maxWidth: "980px" }}>
             <div className="pedido-card">
               <h2 style={{ margin: 0 }}>Filtros</h2>
-              <form onSubmit={handleSubmit} className="login-form" style={{ gap: "12px", marginTop: "14px" }}>
-                <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-                  <label className="form-field">
-                    Fecha desde
-                    <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                  </label>
-                  <label className="form-field">
-                    Fecha hasta
-                    <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-                  </label>
-                </div>
-
-                {rangeError && <p className="form-error">{rangeError}</p>}
-
-                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                  <button className="primary-button" type="submit" disabled={loading}>
-                    {loading ? "Consultando..." : "Consultar"}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={downloading === "csv" || loading}
-                    onClick={() => handleExport("csv")}
-                  >
-                    {downloading === "csv" ? "Exportando..." : "Exportar CSV"}
-                  </button>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={downloading === "pdf" || loading}
-                    onClick={() => handleExport("pdf")}
-                  >
-                    {downloading === "pdf" ? "Exportando..." : "Exportar PDF"}
-                  </button>
-                </div>
-              </form>
+              <FiltrosFecha
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onChangeDateFrom={setDateFrom}
+                onChangeDateTo={setDateTo}
+                onSubmit={handleSubmit}
+                error={rangeError}
+                actions={
+                  <>
+                    <button className="primary-button" type="submit" disabled={loading}>
+                      {loading ? "Consultando..." : "Consultar"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={downloading === "csv" || loading}
+                      onClick={() => handleExport("csv")}
+                    >
+                      {downloading === "csv" ? "Exportando..." : "Exportar CSV"}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      disabled={downloading === "pdf" || loading}
+                      onClick={() => handleExport("pdf")}
+                    >
+                      {downloading === "pdf" ? "Exportando..." : "Exportar PDF"}
+                    </button>
+                  </>
+                }
+              />
             </div>
 
             <div className="pedido-card">
@@ -241,4 +219,3 @@ export function ReportePlatosMasVendidosPage() {
     </div>
   );
 }
-

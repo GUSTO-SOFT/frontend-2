@@ -1,5 +1,5 @@
 import { api } from "../api/client";
-import type { ReporteProductoVendidoRow } from "../types";
+import type { ReporteAfluenciaResponse, ReporteProductoVendidoRow } from "../types";
 
 type DateRange = {
   date_from: string;
@@ -35,3 +35,14 @@ export async function descargarProductosVendidosPdf(range: DateRange) {
   return data as Blob;
 }
 
+type AfluenciaParams = DateRange & {
+  granularidad: "30m" | "1h";
+  dia_semana?: number;
+};
+
+export async function getAfluencia(params: AfluenciaParams) {
+  const { data } = await api.get<ReporteAfluenciaResponse>("/reportes/afluencia", {
+    params,
+  });
+  return data;
+}
