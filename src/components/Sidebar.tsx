@@ -34,13 +34,21 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "CHEF"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
   },
+  { 
+    label: "Factura", 
+    href: "#factura-electronica", 
+    roles: ["ADMIN"],
+    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
+  },
 ];
 
 export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
   const isActive = (href: string) => (
-    currentHash === href || (href === "#pedidos" && currentHash.startsWith("#pedidos/"))
+    currentHash === href ||
+    (href === "#pedidos" && currentHash.startsWith("#pedidos/")) ||
+    (href === "#factura-electronica" && currentHash.startsWith("#factura-electronica"))
   );
 
   const filteredItems = NAV_ITEMS.filter((item) => 

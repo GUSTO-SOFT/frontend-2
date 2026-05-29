@@ -10,6 +10,7 @@ import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
 import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
+import { FacturaElectronicaPage } from "./pages/FacturaElectronicaPage";
 import type { Mesa } from "./types";
 
 type Vista =
@@ -19,7 +20,8 @@ type Vista =
   | { nombre: "menu" }
   | { nombre: "crear-producto" }
   | { nombre: "producto-detalle"; productoId: number }
-  | { nombre: "cocina" };
+  | { nombre: "cocina" }
+  | { nombre: "factura-electronica"; facturaId: number | null };
 
 type AuthVista =
   | { nombre: "login" }
@@ -30,12 +32,16 @@ function vistaDesdeHash(): Vista {
   const hash = window.location.hash;
   const pedidoMatch = hash.match(/^#pedidos\/(\d+)$/);
   const productoMatch = hash.match(/^#menu\/productos\/(\d+)$/);
+  const facturaMatch = hash.match(/^#factura-electronica(?:\/(\d+))?$/);
 
   if (pedidoMatch) {
     return { nombre: "editar-pedido", pedidoId: Number(pedidoMatch[1]) };
   }
   if (productoMatch) {
     return { nombre: "producto-detalle", productoId: Number(productoMatch[1]) };
+  }
+  if (facturaMatch) {
+    return { nombre: "factura-electronica", facturaId: facturaMatch[1] ? Number(facturaMatch[1]) : null };
   }
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
@@ -132,6 +138,17 @@ export function App() {
       );
     case "cocina":
       return <CocinaPage />;
+
+    case "factura-electronica":
+      return (
+        <FacturaElectronicaPage
+          facturaId={vista.facturaId}
+          onConsultar={(facturaId) => {
+            setVista({ nombre: "factura-electronica", facturaId });
+            window.location.hash = `#factura-electronica/${facturaId}`;
+          }}
+        />
+      );
 
     case "mesas":
     default:

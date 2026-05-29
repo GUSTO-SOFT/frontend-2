@@ -78,6 +78,30 @@ export type ApiErrorBody = {
   statusCode?: number;
 };
 
+export type FacturaEstado = "ACEPTADA" | "RECHAZADA" | "PENDIENTE_REINTENTO";
+
+export type FacturaEnvioEstado = "ENVIADO" | "ERROR";
+
+export type FacturaEstadoResponse = {
+  id: number;
+  cuenta_id: number;
+  cufe: string | null;
+  estado: FacturaEstado;
+  timestamp_utc: string;
+  error_body: unknown | null;
+  intentos: number;
+  next_retry_at: string | null;
+};
+
+export type FacturaEnvioResponse = {
+  id: number;
+  factura_id: number;
+  email_destino: string;
+  estado: FacturaEnvioEstado;
+  detalle_error: string | null;
+  sent_at: string | null;
+};
+
 export type PedidoEstado =
   | "BORRADOR"
   | "PENDIENTE"
