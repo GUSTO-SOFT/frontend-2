@@ -1,10 +1,12 @@
+import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { DescuentoModal } from "../components/DescuentoModal";
+import { CerrarCuentaModal } from "../components/CerrarCuentaModal";
 import { getCuentaMesa, cerrarCuenta } from "../services/billingService";
 import { formatCurrency } from "../utils/format";
-import type { Cuenta, Mesa } from "../types";
+import type { ApiErrorBody, Cuenta, Mesa } from "../types";
 import { useAuth } from "../auth/AuthContext";
 
 type Props = {
@@ -19,6 +21,7 @@ export function CuentaMesaPage({ mesa, onVolver, onCuentaCerrada }: Props) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [showDescuentoModal, setShowDescuentoModal] = useState(false);
+  const [showCerrarModal, setShowCerrarModal] = useState(false);
   const [sinItems, setSinItems] = useState(false);
   const [isCerrando, setIsCerrando] = useState(false);
 
@@ -50,7 +53,7 @@ export function CuentaMesaPage({ mesa, onVolver, onCuentaCerrada }: Props) {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const handleCerrarCuenta = async () => {
+  const handleConfirmarCerrarCuenta = async () => {
     if (!cuenta) return;
     setIsCerrando(true);
     try {
@@ -58,10 +61,22 @@ export function CuentaMesaPage({ mesa, onVolver, onCuentaCerrada }: Props) {
       setToast("Cuenta cerrada correctamente");
       onCuentaCerrada();
     } catch (error: any) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const status = error.response?.status;
+        const code = error.response?.data?.error;
+
+        if (status === 409 || code === "CUENTA_YA_CERRADA") {
+          setToast("Esta cuenta ya está cerrada");
+          // Volvemos a cargar la cuenta para actualizar el estado
+          await fetchCuenta();
+          return;
+        }
+      }
       const message = error.response?.data?.message || "Error al cerrar la cuenta";
       setToast(message);
     } finally {
       setIsCerrando(false);
+      setShowCerrarModal(false);
     }
   };
 
@@ -172,7 +187,7 @@ export function CuentaMesaPage({ mesa, onVolver, onCuentaCerrada }: Props) {
                   <button
                     type="button"
                     className="primary-button"
-                    onClick={handleCerrarCuenta}
+                    onClick={() => setShowCerrarModal(true)}
                     disabled={isCerrando}
                     style={{ background: "#d1141f", borderColor: "#d1141f" }}
                   >
@@ -195,6 +210,15 @@ export function CuentaMesaPage({ mesa, onVolver, onCuentaCerrada }: Props) {
               setToast("Descuento aplicado correctamente");
             }}
             onError={setToast}
+          />
+        )}
+
+        {showCerrarModal && cuenta && (
+          <CerrarCuentaModal
+            cuenta={cuenta}
+            isLoading={isCerrando}
+            onClose={() => setShowCerrarModal(false)}
+            onConfirm={handleConfirmarCerrarCuenta}
           />
         )}
       </main>
