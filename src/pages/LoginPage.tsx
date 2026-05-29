@@ -83,6 +83,9 @@ export function LoginPage() {
             </button>
 
             <div className="login-footer">
+              <a className="login-link" href="#olvide-contrasena">
+                Olvidé mi contraseña
+              </a>
               <span>GASTRO-SYSTEM EXCELLENCE</span>
             </div>
           </form>
