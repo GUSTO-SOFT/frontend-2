@@ -1,5 +1,5 @@
 import { api } from "../api/client";
-import type { ReporteAfluenciaResponse, ReporteProductoVendidoRow } from "../types";
+import type { ReporteAfluenciaResponse, ReporteDesperdicioRow, ReporteProductoVendidoRow } from "../types";
 
 type DateRange = {
   date_from: string;
@@ -42,6 +42,17 @@ type AfluenciaParams = DateRange & {
 
 export async function getAfluencia(params: AfluenciaParams) {
   const { data } = await api.get<ReporteAfluenciaResponse>("/reportes/afluencia", {
+    params,
+  });
+  return data;
+}
+
+type DesperdicioParams = DateRange & {
+  ingrediente_id?: number;
+};
+
+export async function getDesperdicioInsumos(params: DesperdicioParams) {
+  const { data } = await api.get<ReporteDesperdicioRow[]>("/reportes/desperdicio", {
     params,
   });
   return data;
