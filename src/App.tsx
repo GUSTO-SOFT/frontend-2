@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
 import { CrearPedidoPage } from "./pages/CrearPedidoPage";
 import { EditarPedidoPage } from "./pages/EditarPedidoPage";
@@ -21,6 +23,11 @@ type Vista =
   | { nombre: "cocina" }
   | { nombre: "cuenta-mesa"; mesa: Mesa };
 
+type AuthVista =
+  | { nombre: "login" }
+  | { nombre: "forgot-password" }
+  | { nombre: "reset-password"; token: string | null };
+
 function vistaDesdeHash(): Vista {
   const hash = window.location.hash;
   const pedidoMatch = hash.match(/^#pedidos\/(\d+)$/);
@@ -38,6 +45,32 @@ function vistaDesdeHash(): Vista {
   return { nombre: "mesas" };
 }
 
+function tokenDesdeHash(hash: string) {
+  const normalized = hash.startsWith("#") ? hash.slice(1) : hash;
+  const [path, query] = normalized.split("?");
+
+  if (query) {
+    const params = new URLSearchParams(query);
+    const token = params.get("token");
+    if (token) return token;
+  }
+
+  const parts = path.split("/");
+  if (parts.length >= 2 && parts[1]) return parts[1];
+
+  return null;
+}
+
+function authVistaDesdeHash(): AuthVista {
+  const hash = window.location.hash;
+  if (!hash || hash === "#login") return { nombre: "login" };
+  if (hash.startsWith("#olvide-contrasena")) return { nombre: "forgot-password" };
+  if (hash.startsWith("#restablecer-contrasena")) {
+    return { nombre: "reset-password", token: tokenDesdeHash(hash) };
+  }
+  return { nombre: "login" };
+}
+
 export function App() {
   const { isAuthenticated } = useAuth();
   const [vista, setVista] = useState<Vista>(() => vistaDesdeHash());
@@ -49,7 +82,12 @@ export function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  if (!isAuthenticated) return <LoginPage />;
+  if (!isAuthenticated) {
+    const authVista = authVistaDesdeHash();
+    if (authVista.nombre === "forgot-password") return <ForgotPasswordPage />;
+    if (authVista.nombre === "reset-password") return <ResetPasswordPage token={authVista.token} />;
+    return <LoginPage />;
+  }
 
   switch (vista.nombre) {
     case "crear-pedido":
