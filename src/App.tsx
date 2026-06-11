@@ -4,13 +4,18 @@ import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
+import { InventarioPage } from "./pages/InventarioPage";
+import { CrearIngredientePage } from "./pages/CrearIngredientePage";
+import { MovimientosStockPage } from "./pages/MovimientosStockPage";
 import { CrearPedidoPage } from "./pages/CrearPedidoPage";
 import { EditarPedidoPage } from "./pages/EditarPedidoPage";
 import { MenuPage } from "./pages/MenuPage";
 import { CrearProductoPage } from "./pages/CrearProductoPage";
 import { ProductoDetallePage } from "./pages/ProductoDetallePage";
 import { CocinaPage } from "./pages/CocinaPage";
+import { GestionUsuariosPage } from "./pages/GestionUsuariosPage";
 import { FacturaElectronicaPage } from "./pages/FacturaElectronicaPage";
+import { CajaPage } from "./pages/CajaPage";
 import { CuentaMesaPage } from "./pages/CuentaMesaPage";
 import { ReportePlatosMasVendidosPage } from "./pages/ReportePlatosMasVendidosPage";
 import { ReporteHorasMayorAfluenciaPage } from "./pages/ReporteHorasMayorAfluenciaPage";
@@ -19,12 +24,17 @@ import type { Mesa } from "./types";
 
 type Vista =
   | { nombre: "mesas" }
+  | { nombre: "inventario" }
+  | { nombre: "crear-ingrediente" }
+  | { nombre: "movimientos-stock" }
   | { nombre: "crear-pedido"; mesa: Mesa }
   | { nombre: "editar-pedido"; pedidoId: number }
   | { nombre: "menu" }
   | { nombre: "crear-producto" }
   | { nombre: "producto-detalle"; productoId: number }
   | { nombre: "cocina" }
+  | { nombre: "usuarios" }
+  | { nombre: "caja" }
   | { nombre: "factura-electronica"; facturaId: number | null }
   | { nombre: "reporte-platos-mas-vendidos" }
   | { nombre: "reporte-horas-mayor-afluencia" }
@@ -54,9 +64,15 @@ function vistaDesdeHash(): Vista {
   if (hash === "#reporte-platos-mas-vendidos") return { nombre: "reporte-platos-mas-vendidos" };
   if (hash === "#reporte-horas-mayor-afluencia") return { nombre: "reporte-horas-mayor-afluencia" };
   if (hash === "#reporte-desperdicio-insumos") return { nombre: "reporte-desperdicio-insumos" };
+  if (hash === "#mesas" || hash === "#pedidos") return { nombre: "mesas" };
+  if (hash === "#inventario" || hash === "#inventario/alertas") return { nombre: "inventario" };
+  if (hash === "#inventario/nuevo") return { nombre: "crear-ingrediente" };
+  if (hash === "#movimientos-stock") return { nombre: "movimientos-stock" };
+  if (hash === "#usuarios") return { nombre: "usuarios" };
   if (hash === "#menu") return { nombre: "menu" };
   if (hash === "#crear-producto") return { nombre: "crear-producto" };
   if (hash === "#cocina") return { nombre: "cocina" };
+  if (hash === "#caja") return { nombre: "caja" };
   return { nombre: "mesas" };
 }
 
@@ -120,6 +136,15 @@ export function App() {
         />
       );
 
+    case "inventario":
+      return <InventarioPage />;
+
+    case "crear-ingrediente":
+      return <CrearIngredientePage />;
+
+    case "movimientos-stock":
+      return <MovimientosStockPage />;
+
     case "editar-pedido":
       return (
         <EditarPedidoPage
@@ -149,6 +174,12 @@ export function App() {
       );
     case "cocina":
       return <CocinaPage />;
+
+    case "usuarios":
+      return <GestionUsuariosPage />;
+
+    case "caja":
+      return <CajaPage />;
 
     case "factura-electronica":
       return (
@@ -201,3 +232,4 @@ export function App() {
       );
   }
 }
+

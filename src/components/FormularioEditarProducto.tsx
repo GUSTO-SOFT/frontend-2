@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CategoriaSelect } from "./CategoriaSelect";
 import { IngredientesMultiSelect } from "./IngredientesMultiSelect";
 import { updateProducto } from "../services/menuService";
+import { buildApiAssetUrl } from "../api/client";
 import type { Producto, CreateProductoData } from "../types";
 import { formatCurrency } from "../utils/format";
 
@@ -25,9 +26,13 @@ export function FormularioEditarProducto({
     categoria: producto.categoria,
     precio: typeof producto.precio === 'string' ? parseFloat(producto.precio) : producto.precio,
     tiempo_preparacion: producto.tiempo_preparacion || producto.tiempoPreparacion || 0,
-    ingredientes: producto.ingredientes?.map(ing => ing.id) || [],
+    ingredientes: producto.ingredientes?.map((ing) => ({
+      ingrediente_id: ing.id,
+      cantidad: Number(ing.cantidad ?? 1),
+    })) || [],
   });
-
+  
+  const [imagePreview, setImagePreview] = useState<string | null>(buildApiAssetUrl(producto.imagen_url));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,10 +42,47 @@ export function FormularioEditarProducto({
     if (!formData.categoria) newErrors.categoria = "La categoría es obligatoria";
     if (formData.precio && formData.precio <= 0) newErrors.precio = "El precio debe ser mayor a 0";
     if (formData.tiempo_preparacion && formData.tiempo_preparacion <= 0) newErrors.tiempo_preparacion = "El tiempo debe ser mayor a 0";
-    if (formData.ingredientes && formData.ingredientes.length === 0) newErrors.ingredientes = "Selecciona al menos un ingrediente";
+    if (formData.ingredientes && formData.ingredientes.length === 0) {
+      newErrors.ingredientes = "Agrega al menos un ingrediente";
+    } else if (formData.ingredientes?.some((item) => !item.ingrediente_id || item.cantidad <= 0)) {
+      newErrors.ingredientes = "Cada ingrediente debe tener una cantidad mayor a 0";
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+
+    if (!file) {
+      setFormData({ ...formData, imagen: null });
+      setImagePreview(buildApiAssetUrl(producto.imagen_url));
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.imagen;
+        return next;
+      });
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, imagen: "Selecciona un archivo de imagen valido" }));
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, imagen: "La imagen no puede superar 3 MB" }));
+      return;
+    }
+
+    setFormData({ ...formData, imagen: file });
+    setImagePreview(URL.createObjectURL(file));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.imagen;
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,8 +99,9 @@ export function FormularioEditarProducto({
         onPermissionError("Sin permisos para esta accion");
       } else {
         const data = error.response?.data;
-        if (data?.statusCode === 400 && Array.isArray(data.message)) {
-          onToast("Error en los datos del formulario");
+        const message = Array.isArray(data?.message) ? data.message.join(" | ") : data?.message;
+        if (message) {
+          onToast(message);
         } else {
           onToast("Error al actualizar el producto");
         }
@@ -152,10 +195,42 @@ export function FormularioEditarProducto({
       </div>
 
       <IngredientesMultiSelect
-        selectedIds={formData.ingredientes || []}
-        onChange={(ids) => setFormData({ ...formData, ingredientes: ids })}
+        selectedIngredientes={formData.ingredientes || []}
+        onChange={(ingredientes) => setFormData({ ...formData, ingredientes })}
         error={errors.ingredientes}
       />
+
+      <div className="form-field">
+        <label htmlFor="editar-producto-imagen">Foto del producto</label>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+          <label
+            htmlFor="editar-producto-imagen"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "fit-content",
+              minHeight: "44px",
+              padding: "0 16px",
+              borderRadius: "12px",
+              border: errors.imagen ? "1px dashed #d1141f" : "1px dashed #d1d5db",
+              color: "#0f172a",
+              cursor: "pointer",
+              background: "#fafafa",
+              fontWeight: 700,
+            }}
+          >
+            Cambiar foto
+          </label>
+          <input id="editar-producto-imagen" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} style={{ display: "none" }} />
+          {imagePreview ? (
+            <img src={imagePreview} alt="Vista previa" style={{ width: "96px", height: "96px", objectFit: "cover", borderRadius: "14px", border: "1px solid #e5e7eb" }} />
+          ) : (
+            <span style={{ color: "#667085", fontSize: "0.9rem" }}>Sin foto registrada</span>
+          )}
+        </div>
+        {errors.imagen && <span style={{ color: "#d1141f", fontSize: "0.85rem" }}>{errors.imagen}</span>}
+      </div>
 
       <div className="modal-actions" style={{ marginTop: "12px" }}>
         <button 

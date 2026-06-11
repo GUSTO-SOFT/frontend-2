@@ -1,4 +1,5 @@
 import { formatCurrency } from "../utils/format";
+import { buildApiAssetUrl } from "../api/client";
 import type { Producto } from "../types";
 
 type Props = {
@@ -9,10 +10,26 @@ export function ProductoAtributosCard({ producto }: Props) {
   const tiempo =
     producto.tiempo_preparacion ?? producto.tiempoPreparacion ?? 0;
   const precio = typeof producto.precio === "string" ? Number(producto.precio) : producto.precio;
+  const imageSrc = buildApiAssetUrl(producto.imagen_url);
 
   return (
     <div className="pedido-card">
       <h2>Atributos del producto</h2>
+
+      {imageSrc && (
+        <img
+          src={imageSrc}
+          alt={producto.nombre}
+          style={{
+            width: "100%",
+            maxHeight: "260px",
+            objectFit: "cover",
+            borderRadius: "16px",
+            border: "1px solid #e5e7eb",
+            marginBottom: "18px",
+          }}
+        />
+      )}
 
       <div className="pedido-resumen__header">
         <div>

@@ -54,6 +54,7 @@ export type Ingrediente = {
   nombre: string;
   unidadMedida?: string;
   unidad_medida?: string;
+  cantidad?: number;
   stock_actual?: number;
   stock_minimo?: number;
   activo?: boolean;
@@ -67,6 +68,8 @@ export type CreateIngredienteData = {
   unidad_medida: string;
   stock_actual: number;
   stock_minimo: number;
+  imagen?: File | null;
+  activo?: boolean;
 };
 
 export type MovimientoStockTipo = "ENTRADA" | "SALIDA" | "AJUSTE";
@@ -154,6 +157,7 @@ export type Producto = {
   precio: number | string;
   tiempo_preparacion?: number;
   tiempoPreparacion?: number;
+  imagen_url?: string | null;
   activo: boolean;
   ingredientes?: Ingrediente[];
   created_at: string;
@@ -165,10 +169,17 @@ export type CreateProductoData = {
   categoria: CategoriaProducto;
   precio: number;
   tiempo_preparacion: number;
-  ingredientes: number[];
+  ingredientes: ProductIngredientInput[];
+  imagen?: File | null;
+};
+
+export type ProductIngredientInput = {
+  ingrediente_id: number;
+  cantidad: number;
 };
 
 export type ApiErrorBody = {
+  code?: string;
   error?: string;
   message?: string | string[];
   statusCode?: number;
@@ -258,4 +269,5 @@ export type Cuenta = {
   total_neto: number;
   closed_at?: string;
   cajero_id?: number;
+  factura?: FacturaEstadoResponse;
 };

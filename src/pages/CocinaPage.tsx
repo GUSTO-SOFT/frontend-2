@@ -1,32 +1,41 @@
 import { useEffect, useState } from "react";
-import { Sidebar } from "../components/Sidebar";
-import { cocinaService } from "../services/cocinaService";
-import { updateEstadoPedido } from "../services/pedidosService";
+import { useAuth } from "../auth/AuthContext";
 import { AlertasBanner } from "../components/AlertasBanner";
+import { Sidebar } from "../components/Sidebar";
+import { Toast } from "../components/Toast";
+import { cocinaService } from "../services/cocinaService";
+import { confirmarEntrega, updateEstadoPedido } from "../services/pedidosService";
 import type { Pedido } from "../types";
 
-import { Toast } from "../components/Toast";
+const ESTADO_LABELS: Record<string, string> = {
+  BORRADOR: "Borrador",
+  PENDIENTE: "Pendiente",
+  EN_PREPARACION: "En preparacion",
+  LISTO: "Listo",
+  ENTREGADO: "Entregado",
+};
 
 
 export function CocinaPage() {
+  const { rol } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
 
+  const canManageKitchen = rol === "ADMIN" || rol === "CHEF";
+  const canConfirmDelivery = rol === "ADMIN" || rol === "MESERO";
 
   const fetchPedidos = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await cocinaService.getPedidos();
-      // Asegurar que estén ordenados por antigüedad ASC (los más viejos primero)
-      const sorted = [...data].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
+      const sorted = [...data].sort((a, b) => (b.hace_minutos ?? 0) - (a.hace_minutos ?? 0));
       setPedidos(sorted);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Error al cargar pedidos");
+      const status = err.response?.status;
+      setError(status === 403 ? "No tienes permisos para ver estos pedidos." : err.response?.data?.message || "Error al cargar pedidos");
     } finally {
       setLoading(false);
     }
@@ -34,25 +43,41 @@ export function CocinaPage() {
 
   useEffect(() => {
     fetchPedidos();
-    // Podríamos agregar un setInterval o WebSockets aquí
-    const interval = setInterval(fetchPedidos, 10000);
-    return () => clearInterval(interval);
+    const interval = window.setInterval(fetchPedidos, 10000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const handleUpdateEstado = async (id: number, nuevoEstado: string) => {
+     if (!canManageKitchen) return;
+
     try {
       await updateEstadoPedido(id, nuevoEstado);
       await fetchPedidos();
 
       if (nuevoEstado === "LISTO") {
-        setToast({ message: "¡Pedido marcado como listo! Notificando al mesero...", type: "success" });
-        setTimeout(() => setToast(null), 3000);
+        setToast({ message: "Pedido marcado como listo. Notificando al mesero...", type: "success" });
+        window.setTimeout(() => setToast(null), 3000);
       }
     } catch (err: any) {
 
       const msg = err.response?.data?.message || "Error al actualizar pedido";
       setToast({ message: msg, type: "error" });
-      setTimeout(() => setToast(null), 5000);
+      window.setTimeout(() => setToast(null), 5000);
+    }
+  };
+
+  const handleConfirmarEntrega = async (id: number) => {
+    if (!canConfirmDelivery) return;
+
+    try {
+      await confirmarEntrega(id);
+      await fetchPedidos();
+      setToast({ message: "Entrega confirmada correctamente.", type: "success" });
+      window.setTimeout(() => setToast(null), 3000);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "No se pudo confirmar la entrega.";
+      setToast({ message: msg, type: "error" });
+      window.setTimeout(() => setToast(null), 5000);
     }
   };
 
@@ -62,90 +87,76 @@ export function CocinaPage() {
       <Sidebar />
       <main className="main-panel">
         <header className="topbar">
-          <h1>Kitchen Display System (KDS)</h1>
-          <button className="primary-button" style={{ width: "auto" }} onClick={fetchPedidos}>Actualizar</button>
+          <h1>{canManageKitchen ? "Cocina - Pedidos en preparacion" : "Estado de mis pedidos"}</h1>
+          <button className="primary-button" style={{ width: "auto" }} onClick={fetchPedidos}>
+            Actualizar
+          </button>
         </header>
 
         <div className="content">
-        <AlertasBanner />
-        {error && <div className="error-message">{error}</div>}
+        {canManageKitchen ? <AlertasBanner /> : null}
+          {error && <div className="form-error">{error}</div>}
         
         {loading && pedidos.length === 0 ? (
-          <p>Cargando pedidos...</p>
-        ) : (
-          <div className="kds-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px", marginTop: "20px" }}>
-            {pedidos.map((pedido) => (
-              <div 
-                key={pedido.id} 
-                className={`card kds-card ${pedido.resaltar_por_antiguedad ? 'urgente' : ''}`}
-                style={{ 
-                  borderTop: pedido.resaltar_por_antiguedad ? "4px solid red" : "4px solid var(--primary-color)",
-                  backgroundColor: pedido.resaltar_por_antiguedad ? "#fff5f5" : "white"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <h3>Mesa {pedido.mesa_numero}</h3>
-                  <span style={{ fontWeight: "bold", color: pedido.resaltar_por_antiguedad ? "red" : "inherit" }}>
-                    {pedido.hace_minutos} min
-                  </span>
-                </div>
-                
-                <p><strong>Mesero:</strong> {pedido.mesero_nombre}</p>
-                <p><strong>Estado:</strong> {pedido.estado}</p>
-                
-                <hr style={{ margin: "10px 0" }} />
-                
-                <ul style={{ paddingLeft: "20px", marginBottom: "15px" }}>
-                  {pedido.detalles.map((detalle) => (
-                    <li key={detalle.id} style={{ marginBottom: "8px" }}>
-                      <strong>{detalle.cantidad}x</strong> {detalle.producto_nombre}
-                      {detalle.notas && (
-                        <div style={{ 
-                          marginTop: "6px",
-                          padding: "6px 10px",
-                          backgroundColor: "#fff3cd",
-                          borderLeft: "4px solid #ffc107",
-                          color: "#856404",
-                          fontWeight: "bold",
-                          fontSize: "0.9em",
-                          borderRadius: "4px",
-                          display: "inline-block"
-                        }}>
-                          ⚠️ NOTA: {detalle.notas}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+            <p>Cargando pedidos...</p>
+          ) : (
+            <div className="kds-grid">
+              {pedidos.map((pedido) => (
+                <div key={pedido.id} className={`kds-card ${pedido.resaltar_por_antiguedad ? "urgente" : ""}`}>
+                  <div className="kds-card__header">
+                    <h3>Mesa {pedido.mesa_numero}</h3>
+                    <span className={pedido.resaltar_por_antiguedad ? "kds-card__time kds-card__time--late" : "kds-card__time"}>
+                      {pedido.hace_minutos ?? 0} min
+                    </span>
+                  </div>
 
-                <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
-                  {pedido.estado === "PENDIENTE" && (
-                    <button 
-                      className="primary-button" 
-                      style={{ flex: 1 }}
-                      onClick={() => handleUpdateEstado(pedido.id, "EN_PREPARACION")}
-                    >
-                      Preparar
-                    </button>
-                  )}
-                  {pedido.estado === "EN_PREPARACION" && (
-                    <button 
-                      className="primary-button" 
-                      style={{ flex: 1, backgroundColor: "#28a745" }}
-                      onClick={() => handleUpdateEstado(pedido.id, "LISTO")}
-                    >
-                      Listo
-                    </button>
-                  )}
+                  <p>
+                    <strong>Mesero:</strong> {pedido.mesero_nombre}
+                  </p>
+                  <p>
+                    <strong>Estado:</strong> {ESTADO_LABELS[pedido.estado] ?? pedido.estado}
+                  </p>
+
+                  <hr />
+
+                  <ul className="kds-card__items">
+                    {pedido.detalles.map((detalle) => (
+                      <li key={detalle.id}>
+                        <strong>{detalle.cantidad}x</strong> {detalle.producto_nombre}
+                        {detalle.notas ? <div className="kds-note">NOTA: {detalle.notas}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {canManageKitchen ? (
+                    <div className="kds-card__actions">
+                      {pedido.estado === "PENDIENTE" && (
+                        <button className="primary-button" onClick={() => handleUpdateEstado(pedido.id, "EN_PREPARACION")}>
+                          Preparar
+                        </button>
+                      )}
+                      {pedido.estado === "EN_PREPARACION" && (
+                        <button className="primary-button" onClick={() => handleUpdateEstado(pedido.id, "LISTO")}>
+                          Listo
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
+                  {!canManageKitchen && canConfirmDelivery && pedido.estado === "LISTO" ? (
+                    <div className="kds-card__actions">
+                      <button className="primary-button" onClick={() => handleConfirmarEntrega(pedido.id)}>
+                        Confirmar entrega
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
-            
-            {pedidos.length === 0 && !loading && (
-              <p>No hay pedidos pendientes en cocina.</p>
-            )}
-          </div>
-        )}
+              ))}
+
+              {pedidos.length === 0 && !loading && (
+                <p>{canManageKitchen ? "No hay pedidos pendientes en cocina." : "No tienes pedidos pendientes en cocina."}</p>
+              )}
+            </div>
+          )}
         </div>
         {toast && <Toast message={toast.message} type={toast.type} />}
       </main>

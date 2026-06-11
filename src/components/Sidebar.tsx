@@ -31,10 +31,10 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     label: "Inventario", 
-    roles: ["ADMIN", "MESERO", "CHEF"],
+    roles: ["ADMIN", "CHEF"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M4 8h16"/></svg>,
     items: [
-      { label: "Gestión de Ingredientes", href: "#inventario", roles: ["ADMIN"] },
+      { label: "Gestión de ingredientes", href: "#inventario", roles: ["ADMIN"] },
       { label: "Alertas de Stock", href: "#inventario/alertas", roles: ["ADMIN", "CHEF"] },
       { label: "Movimientos de Stock", href: "#movimientos-stock", roles: ["ADMIN"] },
     ]
@@ -48,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { 
     label: "Cocina", 
     href: "#cocina", 
-    roles: ["ADMIN", "CHEF"],
+    roles: ["ADMIN", "CHEF", "MESERO"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>
   },
   { 
@@ -84,7 +84,7 @@ const NAV_ITEMS: NavItem[] = [
   { 
     label: "Factura", 
     href: "#factura-electronica", 
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "CAJERO"],
     icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/></svg>
   },
 ];
@@ -92,7 +92,9 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+   const [expandedMenu, setExpandedMenu] = useState<string | null>(
+    currentHash.startsWith("#inventario") || currentHash === "#movimientos-stock" ? "Inventario" : null,
+  );
 
   const isActive = (href?: string) => {
     if (!href) return false;
@@ -116,8 +118,11 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <strong>Gusto-Soft</strong>
-        <span>Gestion Profesional</span>
+        <div className="brand__logo" aria-hidden="true">GS</div>
+        <div>
+          <strong>Gusto-Soft</strong>
+          <span>Gestión profesional</span>
+        </div>
       </div>
       <nav className="side-nav">
         {filteredItems.map((item) => (
@@ -127,21 +132,9 @@ export function Sidebar() {
                 type="button"
                 onClick={() => setExpandedMenu(isMenuExpanded(item.label) ? null : item.label)}
                 className={`side-nav__item ${isMenuExpanded(item.label) ? "side-nav__item--active" : ""}`}
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "12px",
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  width: "100%",
-                  padding: "12px 16px",
-                  justifyContent: "space-between",
-                  color: "inherit",
-                  font: "inherit",
-                }}
+               
               >
-                <span style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span className="side-nav__content">
                   {item.icon}
                   {item.label}
                 </span>
@@ -171,22 +164,15 @@ export function Sidebar() {
               </a>
             )}
             {item.items && isMenuExpanded(item.label) && (
-              <div style={{ display: "grid", gap: "4px", paddingLeft: "24px", marginTop: "4px" }}>
+              <div className="side-nav__subitems">
                 {item.items
                   .filter((subitem) => !subitem.roles || (rol && subitem.roles.includes(rol)))
                   .map((subitem) => (
                   <a
                     key={subitem.label}
                     href={subitem.href}
-                    className={`side-nav__item ${isActive(subitem.href) ? "side-nav__item--active" : ""}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      fontSize: "0.9rem",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                    }}
+                    className={`side-nav__item ${isActive(subitem.href) ? "side-nav__item--active" : ""}`}            
+              
                   >
                     <svg
                       width="12"
@@ -206,7 +192,7 @@ export function Sidebar() {
         ))}
       </nav>
       <button className="secondary-button sidebar__logout" type="button" onClick={logout}>
-        Cerrar sesion
+        Cerrar sesión
       </button>
     </aside>
   );

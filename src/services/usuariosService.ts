@@ -27,5 +27,6 @@ export async function updateUsuarioEstado(id: number, estado: UsuarioEstado) {
 }
 
 export async function getMeserosActivos() {
-  return getUsuarios({ rol: "MESERO", estado: "ACTIVO" });
+  const { data } = await api.get<Usuario[]>("/usuarios/meseros/disponibles");
+  return data;
 }
