@@ -24,6 +24,7 @@ export function FormularioIngrediente({ onSuccess, onToast }: Props) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const stockActual = useMemo(() => {
     const normalized = stockActualInput.replace(",", ".").trim();
@@ -56,8 +57,26 @@ export function FormularioIngrediente({ onSuccess, onToast }: Props) {
 
     if (!file) {
       setImagePreview(null);
+      setImageFile(null);
       return;
     }
+
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, imagen: "Selecciona un archivo de imagen valido" }));
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setErrors((prev) => ({ ...prev, imagen: "La imagen no puede superar 3 MB" }));
+      return;
+    }
+
+    setImageFile(file);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.imagen;
+      return next;
+    });
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -76,6 +95,7 @@ export function FormularioIngrediente({ onSuccess, onToast }: Props) {
         ...formData,
         stock_actual: Number(stockActual.toFixed(3)),
         stock_minimo: Number(stockMinimo.toFixed(3)),
+        imagen: imageFile,
       };
 
       const created = await createIngrediente(payload);
@@ -84,6 +104,7 @@ export function FormularioIngrediente({ onSuccess, onToast }: Props) {
       setStockActualInput("0");
       setStockMinimoInput("0");
       setImagePreview(null);
+      setImageFile(null);
       setErrors({});
       onSuccess(created, imagePreview ?? undefined);
     } catch (error: any) {
@@ -181,6 +202,7 @@ export function FormularioIngrediente({ onSuccess, onToast }: Props) {
               </div>
             )}
           </div>
+          {errors.imagen && <span style={{ color: "#d1141f", fontSize: "0.85rem" }}>{errors.imagen}</span>}
         </div>
       </label>
 

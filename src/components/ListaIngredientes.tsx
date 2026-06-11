@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { AjusteStockModal } from "./AjusteStockModal";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { buildApiAssetUrl } from "../api/client";
 import type { Ingrediente } from "../types";
+import { AjusteStockModal } from "./AjusteStockModal";
+import { deleteIngrediente, updateIngrediente } from "../services/inventarioService";
 
 type Props = {
   ingredientes: Ingrediente[];
@@ -14,9 +16,21 @@ type Props = {
   canAdjust?: boolean;
 };
 
-export function ListaIngredientes({ ingredientes, loading, page, totalPages, onPageChange, totalItems, onAjusteSuccess, onRefresh, canAdjust = true }: Props) {
+export function ListaIngredientes({
+  ingredientes,
+  loading,
+  page,
+  totalPages,
+  onPageChange,
+  totalItems,
+  onAjusteSuccess,
+  onRefresh,
+  canAdjust = true,
+}: Props) {
   const [selectedIngrediente, setSelectedIngrediente] = useState<Ingrediente | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingIngrediente, setEditingIngrediente] = useState<Ingrediente | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const formatNumberSmart = (value: number, maxDecimals: number) => {
     if (!Number.isFinite(value)) return String(value);
@@ -25,134 +39,141 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: "24px", overflow: "hidden", boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)" }}>
-      <div style={{ padding: "24px 24px 0 24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-          <div>
-            <h2 style={{ margin: 0 }}>Lista de ingredientes</h2>
-            <p style={{ margin: "8px 0 0", color: "#667085" }}>
-              Mostrando {ingredientes.length} de {totalItems} ingredientes.
-            </p>
-          </div>
-          <span style={{ fontSize: "0.85rem", color: "#475569", fontWeight: 600 }}>
-            Página {page} de {totalPages}
-          </span>
+    <div className="data-panel">
+      <div className="data-panel__header">
+        <div>
+          <h2>Lista de ingredientes</h2>
+          <p>
+            Mostrando {ingredientes.length} de {totalItems} ingredientes.
+          </p>
         </div>
+        <span>
+          Página {page} de {totalPages}
+        </span>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f8fafc", color: "#475569", textTransform: "uppercase", fontSize: "0.78rem", letterSpacing: "0.03em" }}>
-            <th style={{ padding: "18px 24px", textAlign: "left", minWidth: "320px" }}>Ingrediente</th>
-            <th style={{ padding: "18px 24px", textAlign: "left" }}>Unidad</th>
-            <th style={{ padding: "18px 24px", textAlign: "right" }}>Stock actual</th>
-            <th style={{ padding: "18px 24px", textAlign: "right" }}>Stock mínimo</th>
-            <th style={{ padding: "18px 24px", textAlign: "center" }}>Estado</th>
-            <th style={{ padding: "18px 24px", textAlign: "center" }}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
+      <div className="table-scroll">
+        <table className="data-table">
+          <thead>
             <tr>
-              <td colSpan={6} style={{ padding: "32px", textAlign: "center" }}>
-                Cargando ingredientes...
-              </td>
+              <th style={{ minWidth: "320px" }}>Ingrediente</th>
+              <th>Unidad</th>
+              <th className="text-right">Stock actual</th>
+              <th className="text-right">Stock mínimo</th>
+              <th className="text-center">Estado</th>
+              <th className="text-center">Acciones</th>
             </tr>
-          ) : ingredientes.length === 0 ? (
-            <tr>
-              <td colSpan={6} style={{ padding: "32px", textAlign: "center" }}>
-                No hay ingredientes disponibles.
-              </td>
-            </tr>
-          ) : (
-            ingredientes.map((ingrediente) => {
-              const unidad = ingrediente.unidad_medida ?? ingrediente.unidadMedida ?? "";
-              const imageSrc = ingrediente.imagen_url;
-              const stockActual = Number(ingrediente.stock_actual ?? (ingrediente as any).stockActual ?? 0);
-              const stockMinimo = Number(ingrediente.stock_minimo ?? (ingrediente as any).stockMinimo ?? 0);
-              return (
-                <tr key={ingrediente.id} style={{ borderTop: "1px solid #eef2f7" }}>
-                  <td style={{ padding: "18px 24px", display: "flex", alignItems: "center", gap: "16px" }}>
-                    {imageSrc ? (
-                      <img src={imageSrc} alt={ingrediente.nombre} style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "18px", border: "1px solid #e2e8f0" }} />
-                    ) : (
-                      <div style={{ width: "72px", height: "72px", display: "grid", placeItems: "center", borderRadius: "18px", background: "#f8fafc", color: "#94a3b8", border: "1px solid #e2e8f0", fontSize: "0.8rem" }}>
-                        IMG
-                      </div>
-                    )}
-                    <span style={{ display: "grid", gap: "4px" }}>
-                      <strong>{ingrediente.nombre}</strong>
-                    </span>
-                  </td>
-                  <td style={{ padding: "18px 24px" }}>{unidad}</td>
-                  <td style={{ padding: "18px 24px", textAlign: "right", fontWeight: 700 }}>
-                    {formatNumberSmart(stockActual, 3)}
-                  </td>
-                  <td style={{ padding: "18px 24px", textAlign: "right", fontWeight: 700 }}>
-                    {formatNumberSmart(stockMinimo, 3)}
-                  </td>
-                  <td style={{ padding: "18px 24px", textAlign: "center" }}>
-                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "90px", padding: "8px 12px", borderRadius: "999px", background: ingrediente.activo ? "#e6f7ed" : "#fff0f1", color: ingrediente.activo ? "#047857" : "#b91c1c", fontWeight: 700, fontSize: "0.85rem" }}>
-                      {ingrediente.activo ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "18px 24px", textAlign: "center" }}>
-                    {canAdjust ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedIngrediente(ingrediente);
-                          setShowModal(true);
-                        }}
-                        style={{
-                          background: "#d1141f",
-                          color: "#fff",
-                          border: "none",
-                          borderRadius: "8px",
-                          padding: "8px 16px",
-                          cursor: "pointer",
-                          fontSize: "0.85rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        Ajustar
-                      </button>
-                    ) : (
-                      <span style={{ color: "#98a2b3", fontWeight: 700, fontSize: "0.85rem" }}>—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="table-message">
+                  Cargando ingredientes...
+                </td>
+              </tr>
+            ) : ingredientes.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="table-message">
+                  No hay ingredientes disponibles.
+                </td>
+              </tr>
+            ) : (
+              ingredientes.map((ingrediente) => {
+                const unidad = ingrediente.unidad_medida ?? ingrediente.unidadMedida ?? "";
+                const imageSrc = buildApiAssetUrl(ingrediente.imagen_url);
+                const stockActual = Number(ingrediente.stock_actual ?? (ingrediente as any).stockActual ?? 0);
+                const stockMinimo = Number(ingrediente.stock_minimo ?? (ingrediente as any).stockMinimo ?? 0);
 
-      <div style={{ padding: "18px 24px 24px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                return (
+                  <tr key={ingrediente.id}>
+                    <td>
+                      <div className="ingredient-cell">
+                        {imageSrc ? (
+                          <img src={imageSrc} alt={ingrediente.nombre} className="ingredient-thumb" />
+                        ) : (
+                          <div className="ingredient-thumb ingredient-thumb--empty">IMG</div>
+                        )}
+                        <strong>{ingrediente.nombre}</strong>
+                      </div>
+                    </td>
+                    <td>{unidad}</td>
+                    <td className="text-right strong-cell">{formatNumberSmart(stockActual, 3)}</td>
+                    <td className="text-right strong-cell">{formatNumberSmart(stockMinimo, 3)}</td>
+                    <td className="text-center">
+                      <span className={`status-pill ${ingrediente.activo ? "status-pill--success" : "status-pill--danger"}`}>
+                        {ingrediente.activo ? "Activo" : "Inactivo"}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      {canAdjust ? (
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedIngrediente(ingrediente);
+                              setShowModal(true);
+                            }}
+                            className="table-action"
+                          >
+                            Ajustar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingIngrediente(ingrediente)}
+                            className="table-action table-action--secondary"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingId === ingrediente.id || ingrediente.activo === false}
+                            onClick={async () => {
+                              if (!window.confirm(`Eliminar ${ingrediente.nombre}?`)) return;
+                              setDeletingId(ingrediente.id);
+                              try {
+                                await deleteIngrediente(ingrediente.id);
+                                onAjusteSuccess?.("Ingrediente eliminado correctamente.");
+                                onRefresh?.();
+                              } catch {
+                                onAjusteSuccess?.("No se pudo eliminar el ingrediente.");
+                              } finally {
+                                setDeletingId(null);
+                              }
+                            }}
+                            className="table-action table-action--danger"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="muted-cell">-</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="data-panel__footer">
         <button
           type="button"
           disabled={page === 1 || loading}
           onClick={() => onPageChange(page - 1)}
-          style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#fff", padding: "10px 18px", cursor: page === 1 || loading ? "not-allowed" : "pointer" }}
+          className="pager-button"
         >
           Anterior
         </button>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="pager-pages">
           {Array.from({ length: totalPages }, (_, index) => (
             <button
               key={index}
               type="button"
               disabled={loading}
               onClick={() => onPageChange(index + 1)}
-              style={{
-                minWidth: "38px",
-                padding: "10px 12px",
-                borderRadius: "10px",
-                border: "1px solid #e2e8f0",
-                background: index + 1 === page ? "#d1141f" : "#fff",
-                color: index + 1 === page ? "#fff" : "#0f172a",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
+              className={`pager-button pager-button--number ${index + 1 === page ? "pager-button--active" : ""}`}
             >
               {index + 1}
             </button>
@@ -162,7 +183,7 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
           type="button"
           disabled={page === totalPages || loading}
           onClick={() => onPageChange(page + 1)}
-          style={{ borderRadius: "12px", border: "1px solid #e2e8f0", background: "#fff", padding: "10px 18px", cursor: page === totalPages || loading ? "not-allowed" : "pointer" }}
+          className="pager-button"
         >
           Siguiente
         </button>
@@ -187,6 +208,174 @@ export function ListaIngredientes({ ingredientes, loading, page, totalPages, onP
           }}
         />
       )}
+
+      {editingIngrediente && canAdjust ? (
+        <EditarIngredienteModal
+          ingrediente={editingIngrediente}
+          onClose={() => setEditingIngrediente(null)}
+          onSuccess={(message) => {
+            onAjusteSuccess?.(message);
+            onRefresh?.();
+            setEditingIngrediente(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const UNIDADES = ["KG", "G", "L", "ML", "UNIDAD"] as const;
+
+function EditarIngredienteModal({
+  ingrediente,
+  onClose,
+  onSuccess,
+}: {
+  ingrediente: Ingrediente;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const [nombre, setNombre] = useState(ingrediente.nombre);
+  const [unidadMedida, setUnidadMedida] = useState(ingrediente.unidad_medida ?? ingrediente.unidadMedida ?? "KG");
+  const [stockActual, setStockActual] = useState(String(ingrediente.stock_actual ?? 0));
+  const [stockMinimo, setStockMinimo] = useState(String(ingrediente.stock_minimo ?? 0));
+  const [activo, setActivo] = useState(ingrediente.activo !== false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(buildApiAssetUrl(ingrediente.imagen_url));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setError(null);
+
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(buildApiAssetUrl(ingrediente.imagen_url));
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona un archivo de imagen valido.");
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setError("La imagen no puede superar 3 MB.");
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    const parsedStockActual = Number(stockActual.replace(",", "."));
+    const parsedStockMinimo = Number(stockMinimo.replace(",", "."));
+
+    if (!nombre.trim()) {
+      setError("El nombre es obligatorio.");
+      return;
+    }
+    if (!Number.isFinite(parsedStockActual) || parsedStockActual < 0) {
+      setError("El stock actual debe ser 0 o mayor.");
+      return;
+    }
+    if (!Number.isFinite(parsedStockMinimo) || parsedStockMinimo < 0) {
+      setError("El stock minimo debe ser 0 o mayor.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await updateIngrediente(ingrediente.id, {
+        nombre: nombre.trim(),
+        unidad_medida: unidadMedida,
+        stock_actual: Number(parsedStockActual.toFixed(3)),
+        stock_minimo: Number(parsedStockMinimo.toFixed(3)),
+        activo,
+        imagen: imageFile,
+      });
+      onSuccess("Ingrediente actualizado correctamente.");
+    } catch {
+      setError("No se pudo actualizar el ingrediente.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <header className="modal-header">
+          <h2>Editar ingrediente</h2>
+          <button type="button" className="modal-close" onClick={onClose} disabled={submitting}>
+            &times;
+          </button>
+        </header>
+        <form className="modal-body edit-ingredient-form" onSubmit={handleSubmit}>
+          <label className="form-field">
+            Nombre
+            <input value={nombre} onChange={(event) => setNombre(event.target.value)} />
+          </label>
+
+          <label className="form-field">
+            Unidad
+            <select value={unidadMedida} onChange={(event) => setUnidadMedida(event.target.value)}>
+              {UNIDADES.map((unidad) => (
+                <option key={unidad} value={unidad}>
+                  {unidad}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="edit-ingredient-grid">
+            <label className="form-field">
+              Stock actual
+              <input type="number" min="0" step="0.001" value={stockActual} onChange={(event) => setStockActual(event.target.value)} />
+            </label>
+            <label className="form-field">
+              Stock minimo
+              <input type="number" min="0" step="0.001" value={stockMinimo} onChange={(event) => setStockMinimo(event.target.value)} />
+            </label>
+          </div>
+
+          <label className="form-field">
+            Estado
+            <select value={activo ? "true" : "false"} onChange={(event) => setActivo(event.target.value === "true")}>
+              <option value="true">Activo</option>
+              <option value="false">Inactivo</option>
+            </select>
+          </label>
+
+          <label className="form-field">
+            Foto
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+          </label>
+          {imagePreview ? (
+            <img src={imagePreview} alt="Vista previa" className="edit-ingredient-preview" />
+          ) : (
+            <div className="ingredient-thumb ingredient-thumb--empty edit-ingredient-preview">IMG</div>
+          )}
+
+          {error ? <div className="form-error">{error}</div> : null}
+
+          <div className="modal-actions">
+            <button type="button" className="secondary-button" onClick={onClose} disabled={submitting}>
+              Cancelar
+            </button>
+            <button type="submit" className="primary-button" disabled={submitting}>
+              {submitting ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

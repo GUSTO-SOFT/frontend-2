@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { useAuth } from "../auth/AuthContext";
 import { getProductos } from "../services/menuService";
+import { buildApiAssetUrl } from "../api/client";
 import type { Producto, CategoriaProducto } from "../types";
 import { Toast } from "../components/Toast";
 import { formatCurrency } from "../utils/format";
@@ -180,7 +181,10 @@ export function MenuPage() {
                 ) : filteredProductos.length === 0 ? (
                   <tr><td colSpan={7} style={{ padding: "60px", textAlign: "center", color: "#667085" }}>No se encontraron productos en esta categoría.</td></tr>
                 ) : (
-                  filteredProductos.map((prod) => (
+                  filteredProductos.map((prod) => {
+                    const imageSrc = buildApiAssetUrl(prod.imagen_url);
+
+                    return (
                     <tr key={prod.id} style={{ borderBottom: "1px solid #f8f8f8" }}>
                       <td style={{ padding: "16px 24px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -191,9 +195,14 @@ export function MenuPage() {
                             borderRadius: "12px",
                             display: "grid",
                             placeItems: "center",
-                            fontSize: "20px"
+                            fontSize: "20px",
+                            overflow: "hidden"
                           }}>
-                            {prod.categoria === "BEBIDA" ? "🍹" : prod.categoria === "POSTRE" ? "🍰" : "🍽️"}
+                            {imageSrc ? (
+                              <img src={imageSrc} alt={prod.nombre} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <span className="menu-product-placeholder">IMG</span>
+                            )}
                           </div>
                           <div>
                             <div style={{ display: "flex", alignItems: "center" }}>
@@ -276,7 +285,8 @@ export function MenuPage() {
                         )}
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

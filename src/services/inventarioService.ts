@@ -1,14 +1,7 @@
 import { api } from "../api/client";
 import { getUsuarios } from "./usuariosService";
-import type {
-  CreateIngredienteData,
-  Ingrediente,
-  PaginatedResponse,
-  MovimientoStock,
-  AjusteStockResponse,
-  AlertaInventario,
-  Usuario,
-} from "../types";
+import type {CreateIngredienteData,Ingrediente,PaginatedResponse,MovimientoStock,AjusteStockResponse, AlertaInventario,
+  Usuario,} from "../types";
 
 let usuariosByIdCache: { at: number; map: Map<number, string> } | null = null;
 const USUARIOS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -42,7 +35,43 @@ export async function getIngredientes(params: { page?: number; limit?: number } 
 }
 
 export async function createIngrediente(ingrediente: CreateIngredienteData) {
+  if (ingrediente.imagen) {
+    const formData = new FormData();
+    formData.append("nombre", ingrediente.nombre);
+    formData.append("unidad_medida", ingrediente.unidad_medida);
+    formData.append("stock_actual", String(ingrediente.stock_actual));
+    formData.append("stock_minimo", String(ingrediente.stock_minimo));
+    formData.append("imagen", ingrediente.imagen);
+
+    const { data } = await api.post<Ingrediente>("/inventario/ingredientes/con-imagen", formData);
+    return data;
+  }
+
   const { data } = await api.post<Ingrediente>("/inventario/ingredientes", ingrediente);
+  return data;
+}
+
+export async function updateIngrediente(id: number, ingrediente: Partial<CreateIngredienteData>) {
+  if (ingrediente.imagen) {
+    const formData = new FormData();
+    if (ingrediente.nombre !== undefined) formData.append("nombre", ingrediente.nombre);
+    if (ingrediente.unidad_medida !== undefined) formData.append("unidad_medida", ingrediente.unidad_medida);
+    if (ingrediente.stock_actual !== undefined) formData.append("stock_actual", String(ingrediente.stock_actual));
+    if (ingrediente.stock_minimo !== undefined) formData.append("stock_minimo", String(ingrediente.stock_minimo));
+    if (ingrediente.activo !== undefined) formData.append("activo", String(ingrediente.activo));
+    formData.append("imagen", ingrediente.imagen);
+
+    const { data } = await api.patch<Ingrediente>(`/inventario/ingredientes/${id}/imagen`, formData);
+    return data;
+  }
+
+  const { imagen, ...payload } = ingrediente;
+  const { data } = await api.patch<Ingrediente>(`/inventario/ingredientes/${id}`, payload);
+  return data;
+}
+
+export async function deleteIngrediente(id: number) {
+  const { data } = await api.delete<Ingrediente>(`/inventario/ingredientes/${id}`);
   return data;
 }
 

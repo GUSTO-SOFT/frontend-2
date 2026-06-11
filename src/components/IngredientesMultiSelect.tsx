@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { getIngredientes } from "../services/menuService";
-import type { Ingrediente } from "../types";
+import type { Ingrediente, ProductIngredientInput } from "../types";
 
 type Props = {
-  selectedIds: number[];
-  onChange: (ids: number[]) => void;
+  selectedIngredientes: ProductIngredientInput[];
+  onChange: (ingredientes: ProductIngredientInput[]) => void;
   error?: string;
 };
 
-export function IngredientesMultiSelect({ selectedIds, onChange, error }: Props) {
+export function IngredientesMultiSelect({ selectedIngredientes, onChange, error }: Props) {
   const [ingredientes, setIngredientes] = useState<Ingrediente[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -18,12 +18,32 @@ export function IngredientesMultiSelect({ selectedIds, onChange, error }: Props)
       .finally(() => setLoading(false));
   }, []);
 
-  const toggleIngrediente = (id: number) => {
-    if (selectedIds.includes(id)) {
-      onChange(selectedIds.filter((i) => i !== id));
-    } else {
-      onChange([...selectedIds, id]);
-    }
+  const selectedIds = selectedIngredientes.map((item) => item.ingrediente_id);
+
+  const addIngrediente = () => {
+    const next = ingredientes.find((item) => !selectedIds.includes(item.id));
+    if (!next) return;
+    onChange([...selectedIngredientes, { ingrediente_id: next.id, cantidad: 1 }]);
+  };
+
+  const updateIngrediente = (index: number, ingredienteId: number) => {
+    onChange(
+      selectedIngredientes.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ingrediente_id: ingredienteId } : item,
+      ),
+    );
+  };
+
+  const updateCantidad = (index: number, cantidad: number) => {
+    onChange(
+      selectedIngredientes.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, cantidad } : item,
+      ),
+    );
+  };
+
+  const removeIngrediente = (index: number) => {
+    onChange(selectedIngredientes.filter((_, itemIndex) => itemIndex !== index));
   };
 
   if (loading) return <p className="mesa-muted">Cargando ingredientes...</p>;
@@ -32,44 +52,123 @@ export function IngredientesMultiSelect({ selectedIds, onChange, error }: Props)
     <div className="form-field">
       <label>Ingredientes</label>
       <div 
-        className="ingredientes-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: "10px",
+          gap: "12px",
           padding: "16px",
           border: error ? "1px solid #d1141f" : "1px solid #d8deea",
           borderRadius: "14px",
-          background: "#fff",
-          maxHeight: "200px",
-          overflowY: "auto"
+          background: "#fff",          
         }}
       >
-        {ingredientes.map((ing) => (
-          <label 
-            key={ing.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-              padding: "6px 10px",
-              borderRadius: "8px",
-              background: selectedIds.includes(ing.id) ? "#fff0f1" : "transparent",
-              border: selectedIds.includes(ing.id) ? "1px solid #d1141f" : "1px solid transparent",
-              transition: "all 0.2s"
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(ing.id)}
-              onChange={() => toggleIngrediente(ing.id)}
-              style={{ accentColor: "#d1141f" }}
-            />
-            {ing.nombre}
-          </label>
-        ))}
+       <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) 130px 40px",
+            gap: "10px",
+            color: "#667085",
+            fontSize: "0.78rem",
+            fontWeight: 900,
+            textTransform: "uppercase",
+          }}
+        >
+          <span>Ingrediente</span>
+          <span>Cantidad</span>
+          <span />
+        </div>
+
+        {selectedIngredientes.length === 0 ? (
+          <p className="mesa-muted">Agrega los ingredientes que usa este producto.</p>
+        ) : (
+          selectedIngredientes.map((selected, index) => {
+            const options = ingredientes.filter(
+              (item) => item.id === selected.ingrediente_id || !selectedIds.includes(item.id),
+            );
+
+            return (
+              <div
+                key={`${selected.ingrediente_id}-${index}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) 130px 40px",
+                  gap: "10px",
+                  alignItems: "center",
+                }}
+              >
+                <select
+                  value={selected.ingrediente_id}
+                  onChange={(event) => updateIngrediente(index, Number(event.target.value))}
+                  style={{
+                    width: "100%",
+                    minHeight: "44px",
+                    border: "1px solid #d8deea",
+                    borderRadius: "12px",
+                    padding: "0 12px",
+                    background: "#fff",
+                  }}
+                >
+                  {options.map((ingrediente) => (
+                    <option key={ingrediente.id} value={ingrediente.id}>
+                      {ingrediente.nombre}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  value={selected.cantidad || ""}
+                  onChange={(event) => updateCantidad(index, Number(event.target.value))}
+                  placeholder="Cantidad"
+                  style={{
+                    width: "100%",
+                    minHeight: "44px",
+                    border: "1px solid #d8deea",
+                    borderRadius: "12px",
+                    padding: "0 12px",
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => removeIngrediente(index)}
+                  aria-label="Quitar ingrediente"
+                  title="Quitar ingrediente"
+                  style={{
+                    width: "40px",
+                    minHeight: "40px",
+                    border: "1px solid #fecdca",
+                    borderRadius: "10px",
+                    background: "#fff5f5",
+                    color: "#b42318",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                  }}
+                >
+                  x
+                </button>
+              </div>
+            );
+          })
+        )}
+
+        <button
+          type="button"
+          onClick={addIngrediente}
+          disabled={selectedIngredientes.length >= ingredientes.length}
+          className="secondary-button"
+          style={{
+            width: "fit-content",
+            minHeight: "42px",
+            padding: "0 16px",
+          }}
+        >
+          + Agregar ingrediente
+        </button>
+        {ingredientes.length === 0 ? (
+          <span className="mesa-muted">Primero crea ingredientes en Inventario.</span>
+        ) : null}
       </div>
       {error && <span className="error-text" style={{ color: "#d1141f", fontSize: "0.85rem", marginTop: "4px" }}>{error}</span>}
     </div>

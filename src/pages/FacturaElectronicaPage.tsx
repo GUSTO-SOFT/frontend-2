@@ -179,7 +179,7 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
     }
   }
 
-  if (rol !== "ADMIN") {
+  if (rol !== "ADMIN" && rol !== "CAJERO") {
     return (
       <div className="app-shell">
         <Sidebar />
@@ -187,7 +187,7 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
           <div className="content">
             <div className="empty-state">
               <h2>Acceso Denegado</h2>
-              <p>Solo los administradores pueden acceder a la factura electrónica.</p>
+              <p>Solo administradores y cajeros pueden acceder a la factura electrónica.</p>
             </div>
           </div>
         </main>
@@ -347,3 +347,4 @@ export function FacturaElectronicaPage({ facturaId, onConsultar }: Props) {
     </div>
   );
 }
+

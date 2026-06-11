@@ -19,15 +19,16 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const authStorage = window.sessionStorage;
 
 function readStoredUser() {
-  const raw = localStorage.getItem("usuario");
+  const raw = authStorage.getItem("usuario");
   if (!raw) return null;
 
   try {
     return JSON.parse(raw) as Usuario;
   } catch {
-    localStorage.removeItem("usuario");
+    authStorage.removeItem("usuario");
     return null;
   }
 }
@@ -38,13 +39,13 @@ function readRolFromToken(token: string | null) {
   try {
     return jwtDecode<JwtPayload>(token).rol;
   } catch {
-    localStorage.removeItem("access_token");
+    authStorage.removeItem("access_token");
     return null;
   }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState(() => localStorage.getItem("access_token"));
+  const [token, setToken] = useState(() => authStorage.getItem("access_token"));
   const [usuario, setUsuario] = useState<Usuario | null>(() => readStoredUser());
 
   const rol = readRolFromToken(token) ?? usuario?.rol ?? null;
@@ -55,14 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     rol,
     isAuthenticated: Boolean(token && usuario),
     login(nextUsuario, nextToken) {
-      localStorage.setItem("access_token", nextToken);
-      localStorage.setItem("usuario", JSON.stringify(nextUsuario));
+      authStorage.setItem("access_token", nextToken);
+      authStorage.setItem("usuario", JSON.stringify(nextUsuario));
       setToken(nextToken);
       setUsuario(nextUsuario);
     },
     logout() {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("usuario");
+      authStorage.removeItem("access_token");
+      authStorage.removeItem("usuario");
       setToken(null);
       setUsuario(null);
     },

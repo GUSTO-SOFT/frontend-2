@@ -13,6 +13,7 @@ type Props = {
   errorNotas?: string | null;
   onCantidadChange: (cantidad: number) => void;
   onNotasChange: (notas: string) => void;
+  onRemove?: () => void;
 };
 
 export function LineaDetallePedido({
@@ -26,6 +27,7 @@ export function LineaDetallePedido({
   errorNotas,
   onCantidadChange,
   onNotasChange,
+  onRemove,
 }: Props) {
   return (
     <div className="detalle-row detalle-row--pedido">
@@ -41,7 +43,19 @@ export function LineaDetallePedido({
         onChange={onCantidadChange}
         error={errorCantidad}
       />
+      {onRemove ? (
+        <button
+          type="button"
+          className="quitar-linea"
+          onClick={onRemove}
+          disabled={disabled}
+          title="Quitar producto"
+        >
+          x
+        </button>
+      ) : (
       <span />
+      )}
     </div>
   );
 }

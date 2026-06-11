@@ -6,6 +6,15 @@ export const api = axios.create({
   baseURL: API_URL,
 });
 
+export function buildApiAssetUrl(url?: string | null) {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const base = API_URL.replace(/\/$/, "");
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${base}${path}`;
+}
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) {

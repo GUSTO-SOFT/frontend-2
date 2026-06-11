@@ -5,12 +5,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { LineaDetallePedido } from "../components/LineaDetallePedido";
 import { getProductosActivos } from "../services/menuService";
-import {
-  actualizarDetallesPedido,
-  confirmarEntrega,
-  enviarPedido,
-  getPedido,
-} from "../services/pedidosService";
+import {actualizarDetallesPedido,confirmarEntrega,enviarPedido,getPedido,} from "../services/pedidosService";
 import { useAuth } from "../auth/AuthContext";
 import { formatCurrency } from "../utils/format";
 import type { ApiErrorBody, Pedido, Producto } from "../types";
@@ -143,6 +138,10 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     return productos.filter((producto) => producto.nombre.toLowerCase().includes(term));
   }, [busqueda, productos]);
 
+  function getIngredientesSinStock(producto: Producto) {
+    return (producto.ingredientes ?? []).filter((ingrediente) => Number(ingrediente.stock_actual ?? 1) <= 0);
+  }
+
   function actualizarCantidad(index: number, cantidad: number) {
     setDetalles((prev) => prev.map((linea, i) => (i === index ? { ...linea, cantidad } : linea)));
     setErroresCantidadPorLinea((prev) => prev.map((error, i) => (i === index ? null : error)));
@@ -171,6 +170,12 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     });
     setErroresCantidadPorLinea((prev) => [...prev, null]);
     setErroresNotasPorLinea((prev) => [...prev, null]);
+  }
+
+  function quitarProducto(index: number) {
+    setDetalles((prev) => prev.filter((_, i) => i !== index));
+    setErroresCantidadPorLinea((prev) => prev.filter((_, i) => i !== index));
+    setErroresNotasPorLinea((prev) => prev.filter((_, i) => i !== index));
   }
 
   function validarLineas(lineas: LineaDetalle[]) {
@@ -248,7 +253,15 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
     setToast({ message: message.join(" | "), type: "error" });
   }
 
-  async function handleGuardarCambios() {
+  function buildDetallesPayload() {
+    return detalles.map((linea) => {
+      const base = { producto_id: linea.producto_id, cantidad: linea.cantidad };
+      const normalizada = linea.notas.trim();
+      return { ...base, notas: normalizada.length === 0 ? null : normalizada };
+    });
+  }
+
+  async function guardarBorrador(showSuccessToast = true) {
     if (!pedido) return;
 
     if (pedido.estado !== "BORRADOR" || pedidoNoEditable) {
@@ -262,16 +275,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
     setEnviando(true);
     try {
-      const detallesPayload = detalles.map((linea) => {
-        const base = { producto_id: linea.producto_id, cantidad: linea.cantidad };
-        if (!linea.notasTouched) return base;
-        const normalizada = linea.notas.trim();
-        return { ...base, notas: normalizada.length === 0 ? null : normalizada };
-      });
-
-      const data = await actualizarDetallesPedido(pedidoId, { detalles: detallesPayload });
+      const data = await actualizarDetallesPedido(pedidoId, { detalles: buildDetallesPayload() });
       setPedido(data);
-      setToast({ message: "Pedido actualizado correctamente.", type: "success" });
+      if (showSuccessToast) {
+        setToast({ message: "Pedido actualizado correctamente.", type: "success" });
+      }
       setPedidoNoEditable(false);
       const nextNotasOriginal = new Map<number, string>();
       data.detalles.forEach((detalle) => {
@@ -288,9 +296,10 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       setDetalles(detallesActualizados);
       setErroresCantidadPorLinea(new Array(detallesActualizados.length).fill(null));
       setErroresNotasPorLinea(new Array(detallesActualizados.length).fill(null));
-    } catch (error) {
+      return data;
+      } catch (error) {
       if (axios.isAxiosError<ApiErrorBody>(error)) {
-        const code = error.response?.data?.error;
+        const code = error.response?.data?.code ?? error.response?.data?.error;
         const status = error.response?.status;
 
         if (status === 409 || code === "PEDIDO_NO_EDITABLE") {
@@ -310,9 +319,14 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
       }
 
       setToast({ message: "No se pudo actualizar el pedido. Intenta nuevamente.", type: "error" });
+      return null;
     } finally {
       setEnviando(false);
     }
+  }
+
+  async function handleGuardarCambios() {
+    await guardarBorrador(true);
   }
 
   async function handleEnviarACocina() {
@@ -329,6 +343,9 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
     setEnviandoEnvio(true);
     try {
+      const saved = await guardarBorrador(false);
+      if (!saved) return;
+
       const data = await enviarPedido(pedidoId);
       setPedido(data);
       setToast({ message: "Pedido enviado a cocina correctamente", type: "success" });
@@ -337,6 +354,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
         const status = error.response?.status;
         const data = error.response?.data as unknown as { code?: string; error?: string; message?: string };
         const code = data?.error ?? data?.code;
+        const message = data?.message;
 
         if (status === 422 && code === "PEDIDO_SIN_ITEMS") {
           setToast({ message: "No puedes enviar un pedido sin productos", type: "error" });
@@ -350,6 +368,11 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
             const refreshed = await getPedido(pedidoId);
             setPedido(refreshed);
           } catch {}
+          return;
+        }
+
+        if (status === 422 && code === "STOCK_INSUFICIENTE") {
+          setToast({ message: message ?? "No hay stock suficiente para enviar este pedido", type: "error" });
           return;
         }
       }
@@ -551,6 +574,7 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
                           errorNotas={erroresNotasPorLinea[index]}
                           onCantidadChange={(cantidad) => actualizarCantidad(index, cantidad)}
                           onNotasChange={(notas) => actualizarNotas(index, notas)}
+                          onRemove={() => quitarProducto(index)}
                         />
                       );
                     })
@@ -590,10 +614,16 @@ export function EditarPedidoPage({ pedidoId, onVolverMesas }: Props) {
 
                       {productosFiltrados.map((producto) => {
                         const existente = detalles.find((linea) => linea.producto_id === producto.id);
+                        const ingredientesSinStock = getIngredientesSinStock(producto);
                         return (
                           <div key={producto.id} className="detalle-row">
                             <div className="detalle-producto">
                               <strong>{producto.nombre}</strong>
+                              {ingredientesSinStock.length > 0 ? (
+                                <span className="inline-warning pedido-stock-warning">
+                                  Sin stock: {ingredientesSinStock.map((ingrediente) => ingrediente.nombre).join(", ")}
+                                </span>
+                              ) : null}
                             </div>
                             <span className="detalle-categoria">{producto.categoria}</span>
                             <span className="detalle-precio">{formatCurrency(producto.precio)}</span>
