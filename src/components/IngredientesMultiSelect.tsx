@@ -51,17 +51,17 @@ export function IngredientesMultiSelect({ selectedIngredientes, onChange, error 
   return (
     <div className="form-field">
       <label>Ingredientes</label>
-      <div 
+      <div
         style={{
           display: "grid",
           gap: "12px",
           padding: "16px",
           border: error ? "1px solid #d1141f" : "1px solid #d8deea",
           borderRadius: "14px",
-          background: "#fff",          
+          background: "#fff",
         }}
       >
-       <div
+        <div
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1fr) 130px 40px",

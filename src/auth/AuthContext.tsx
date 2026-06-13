@@ -21,6 +21,8 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 const authStorage = window.sessionStorage;
 
+const authStorage = window.sessionStorage;
+
 function readStoredUser() {
   const raw = authStorage.getItem("usuario");
   if (!raw) return null;

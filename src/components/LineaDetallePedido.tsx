@@ -54,7 +54,7 @@ export function LineaDetallePedido({
           x
         </button>
       ) : (
-      <span />
+        <span />
       )}
     </div>
   );

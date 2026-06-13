@@ -31,7 +31,7 @@ export function FormularioEditarProducto({
       cantidad: Number(ing.cantidad ?? 1),
     })) || [],
   });
-  
+
   const [imagePreview, setImagePreview] = useState<string | null>(buildApiAssetUrl(producto.imagen_url));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
