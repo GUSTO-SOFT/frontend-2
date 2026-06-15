@@ -27,7 +27,7 @@ jobs:
       - name: Build del proyecto
         run: npm run build
         env:
-          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_API_URL: https://gusto-soft-backend.onrender.com
 
       - name: Deploy a Netlify
         uses: nwtgck/actions-netlify@v2

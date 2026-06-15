@@ -3,7 +3,16 @@ import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
-import {getUsuarios,createUsuario,updateUsuario,updateUsuarioEstado,} from "../services/usuariosService";
+import {
+  getUsuarios,
+  createUsuario,
+  updateUsuario,
+  updateUsuarioEstado,
+  asignarRolUsuario,
+  reenviarCodigoVerificacion,
+  getEstadoVerificacion,
+  type VerificacionEstadoResponse,
+} from "../services/usuariosService";
 import type { Usuario, Rol, UsuarioEstado, ApiErrorBody } from "../types";
 
 const PAGE_SIZE = 10;
@@ -22,6 +31,12 @@ export function GestionUsuariosPage() {
   const [stats, setStats] = useState({ ADMIN: 0, MESERO: 0, CHEF: 0, CAJERO: 0 });
   const [showPassword, setShowPassword] = useState(false);
 
+  // Verification Modal State
+  const [verifStatusUser, setVerifStatusUser] = useState<Usuario | null>(null);
+  const [verifData, setVerifData] = useState<VerificacionEstadoResponse | null>(null);
+  const [loadingVerif, setLoadingVerif] = useState(false);
+  const [actioningVerif, setActioningVerif] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState({
     nombre: "",
@@ -39,23 +54,19 @@ export function GestionUsuariosPage() {
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-          const response = await getUsuarios({
+      const response = await getUsuarios({
         rol: roleFilter === "TODOS" ? undefined : roleFilter
       });
       
-      // El backend devuelve un array plano de usuarios
       const allUsers = Array.isArray(response) ? response : [];
       
-      // Aplicar búsqueda localmente
       const filtered = allUsers.filter(u => 
         u.nombre.toLowerCase().includes(search.toLowerCase()) || 
         u.email.toLowerCase().includes(search.toLowerCase())
       );
 
       setUsuarios(filtered);
-      setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
-
-      // Actualizar estadísticas con todos los datos obtenidos
+      setTotalPages(Math.ceil(filtered.length / PAGE_SIZE) || 1);
       updateStats(allUsers);
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
@@ -94,12 +105,18 @@ export function GestionUsuariosPage() {
     setSubmitting(true);
     try {
       if (editingUser) {
-        await updateUsuario(editingUser.id, {
-          nombre: formData.nombre,
-          email: formData.email,
-          rol: formData.rol
-        });
-        setToast("Usuario actualizado con éxito");
+        if (editingUser.estado === "PENDIENTE_ASIGNACION_ROL") {
+          // Asignar rol y detonar verificación
+          await asignarRolUsuario(editingUser.id, formData.rol);
+          setToast("Rol asignado e inicio de verificación detonado con éxito");
+        } else {
+          await updateUsuario(editingUser.id, {
+            nombre: formData.nombre,
+            email: formData.email,
+            rol: formData.rol
+          });
+          setToast("Usuario actualizado con éxito");
+        }
       } else {
         await createUsuario(formData);
         setToast("Usuario creado con éxito");
@@ -145,6 +162,60 @@ export function GestionUsuariosPage() {
       fetchUsuarios();
     } catch (error) {
       setToast("Error al cambiar estado");
+    }
+  };
+
+  // View verification details
+  const handleViewVerification = async (u: Usuario) => {
+    setVerifStatusUser(u);
+    setLoadingVerif(true);
+    setVerifData(null);
+    try {
+      const data = await getEstadoVerificacion(u.id);
+      setVerifData(data);
+    } catch (err) {
+      console.error(err);
+      setToast("Error al obtener estado de verificación");
+    } finally {
+      setLoadingVerif(false);
+    }
+  };
+
+  // Resend verification code
+  const handleResendCode = async () => {
+    if (!verifStatusUser) return;
+    setActioningVerif(true);
+    try {
+      await reenviarCodigoVerificacion(verifStatusUser.id);
+      setToast("Código de verificación reenviado con éxito");
+      // Refrescar modal
+      const data = await getEstadoVerificacion(verifStatusUser.id);
+      setVerifData(data);
+    } catch (err: any) {
+      if (axios.isAxiosError<ApiErrorBody>(err)) {
+        const message = err.response?.data?.message;
+        setToast(Array.isArray(message) ? message[0] : message || "Error al reenviar código");
+      }
+    } finally {
+      setActioningVerif(false);
+    }
+  };
+
+  // Direct manual activation
+  const handleManualActivate = async () => {
+    if (!verifStatusUser) return;
+    if (!window.confirm(`¿Deseas activar manualmente la cuenta de ${verifStatusUser.nombre} (Bypass de verificación)?`)) return;
+    setActioningVerif(true);
+    try {
+      await updateUsuarioEstado(verifStatusUser.id, "ACTIVO");
+      setToast("Cuenta activada manualmente con éxito");
+      setVerifStatusUser(null);
+      fetchUsuarios();
+    } catch (err) {
+      console.error(err);
+      setToast("Error al activar la cuenta manualmente");
+    } finally {
+      setActioningVerif(false);
     }
   };
 
@@ -218,7 +289,7 @@ export function GestionUsuariosPage() {
           </div>
 
           <div className="form-error" style={{ marginBottom: "18px", color: "#344054", borderColor: "#d8deea", background: "#f8fafc" }}>
-            El codigo de verificacion no se puede consultar en texto plano desde este panel. El backend lo guarda como hash; el flujo disponible es asignar rol, enviar/reintentar codigo por correo y validar el codigo ingresado por el usuario.
+            Los códigos de verificación se envían por correo. Desde este panel, puedes consultar el estado del envío, reenviar códigos y activar cuentas manualmente si el correo no se entrega correctamente.
           </div>
 
           {/* Tabla de Usuarios */}
@@ -262,9 +333,45 @@ export function GestionUsuariosPage() {
                           {u.estado}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", display: "flex", gap: "8px" }}>
-                        <button onClick={() => handleEdit(u)} style={{ background: "none", border: "none", cursor: "pointer", color: "#667085" }}>✎</button>
-                        <button onClick={() => toggleStatus(u)} style={{ background: "none", border: "none", cursor: "pointer", color: u.estado === "ACTIVO" ? "#d1141f" : "#007a2f" }}>
+                      <td style={{ padding: "16px 24px", display: "flex", gap: "8px", alignItems: "center" }}>
+                        <button 
+                          onClick={() => handleEdit(u)} 
+                          title="Editar"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#667085", fontSize: "1.1rem" }}
+                        >
+                          ✎
+                        </button>
+                        
+                        {u.estado === "PENDIENTE_VERIFICACION" && (
+                          <button 
+                            onClick={() => handleViewVerification(u)}
+                            title="Gestionar Verificación"
+                            style={{ 
+                              background: "#f8fafc", 
+                              border: "1px solid #d8deea", 
+                              borderRadius: "6px", 
+                              padding: "4px 8px", 
+                              cursor: "pointer", 
+                              color: "#7a5b00",
+                              fontSize: "0.75rem",
+                              fontWeight: "600"
+                            }}
+                          >
+                            🔑 Código
+                          </button>
+                        )}
+
+                        <button 
+                          onClick={() => toggleStatus(u)} 
+                          style={{ 
+                            background: "none", 
+                            border: "none", 
+                            cursor: "pointer", 
+                            color: u.estado === "ACTIVO" ? "#d1141f" : "#007a2f",
+                            fontWeight: "600",
+                            fontSize: "0.85rem"
+                          }}
+                        >
                           {u.estado === "ACTIVO" ? "Desactivar" : "Reactivar"}
                         </button>
                       </td>
@@ -357,6 +464,95 @@ export function GestionUsuariosPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Detalles Verificación */}
+        {verifStatusUser && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: "550px" }}>
+              <header className="modal-header">
+                <h2>Código de Verificación</h2>
+                <button className="modal-close" onClick={() => setVerifStatusUser(null)}>&times;</button>
+              </header>
+              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div>
+                  <strong>Empleado:</strong> {verifStatusUser.nombre} ({verifStatusUser.email})
+                </div>
+
+                {loadingVerif ? (
+                  <div style={{ textAlign: "center", padding: "20px" }}>Consultando estado...</div>
+                ) : verifData ? (
+                  <div style={{ background: "#f8fafc", border: "1px solid #e3e9f2", borderRadius: "12px", padding: "16px", fontSize: "0.9rem", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div>
+                      <strong>Estado del código:</strong>{" "}
+                      <span style={{ 
+                        color: verifData.codigo_disponible ? "#007a2f" : "#d1141f", 
+                        fontWeight: "700" 
+                      }}>
+                        {verifData.codigo_disponible ? "Vigente / Activo" : "No disponible / Expirado"}
+                      </span>
+                    </div>
+
+                    {verifData.expires_at && (
+                      <div>
+                        <strong>Expira en:</strong> {new Date(verifData.expires_at).toLocaleString()}
+                      </div>
+                    )}
+
+                    <div>
+                      <strong>Estado del correo:</strong>{" "}
+                      <span style={{ 
+                        color: verifData.envio_estado === "ENVIADO" ? "#007a2f" : "#d1141f", 
+                        fontWeight: "700" 
+                      }}>
+                        {verifData.envio_estado || "No enviado"}
+                      </span>
+                    </div>
+
+                    {verifData.detalle_error && (
+                      <div style={{ color: "#d1141f", fontSize: "0.8rem", background: "#fff0f1", padding: "8px", borderRadius: "6px", border: "1px solid #ffd0d3" }}>
+                        <strong>Error SMTP:</strong> {verifData.detalle_error}
+                      </div>
+                    )}
+
+                    {verifData.sent_at && (
+                      <div>
+                        <strong>Enviado el:</strong> {new Date(verifData.sent_at).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ color: "#d1141f" }}>No se pudo obtener la información de verificación.</div>
+                )}
+
+                <div style={{ borderTop: "1px solid #eee", paddingTop: "16px", marginTop: "8px" }}>
+                  <p style={{ fontSize: "0.8rem", color: "#667085", marginBottom: "16px" }}>
+                    ⚠️ <em>Nota: El backend almacena el código como hash SHA-256 en la base de datos por motivos de seguridad. Si el correo no llega debido a problemas de configuración SMTP, puedes activar al usuario manualmente aquí.</em>
+                  </p>
+                  <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                    <button 
+                      type="button" 
+                      className="secondary-button" 
+                      onClick={handleResendCode} 
+                      disabled={actioningVerif || loadingVerif}
+                      style={{ padding: "10px 16px" }}
+                    >
+                      {actioningVerif ? "Reenviando..." : "✉️ Reenviar Correo"}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="primary-button" 
+                      onClick={handleManualActivate} 
+                      disabled={actioningVerif || loadingVerif}
+                      style={{ background: "#007a2f", padding: "10px 16px", color: "#fff", width: "auto" }}
+                    >
+                      ✅ Activar Manualmente
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
