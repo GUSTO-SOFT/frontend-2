@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:3000").replace(/\/api\/?$/, "");
+const defaultApiUrl = import.meta.env.DEV
+  ? "http://localhost:3000"
+  : "https://gusto-soft-backend.onrender.com";
+
+export const API_URL = (import.meta.env.VITE_API_URL ?? defaultApiUrl).replace(/\/api\/?$/, "");
 
 export const api = axios.create({
   baseURL: API_URL,
