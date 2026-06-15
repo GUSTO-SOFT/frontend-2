@@ -68,7 +68,7 @@ export function GestionUsuariosPage() {
   const updateStats = (data: Usuario[]) => {
     const newStats = { ADMIN: 0, MESERO: 0, CHEF: 0, CAJERO: 0 };
     data.forEach(u => {
-      if (newStats[u.rol] !== undefined) newStats[u.rol]++;
+      if (u.rol && newStats[u.rol] !== undefined) newStats[u.rol]++;
     });
     setStats(newStats);
   };
@@ -129,7 +129,7 @@ export function GestionUsuariosPage() {
       nombre: u.nombre,
       email: u.email,
       password: "",
-      rol: u.rol
+      rol: u.rol ?? "MESERO"
     });
     setShowModal(true);
   };
@@ -217,6 +217,10 @@ export function GestionUsuariosPage() {
             </button>
           </div>
 
+          <div className="form-error" style={{ marginBottom: "18px", color: "#344054", borderColor: "#d8deea", background: "#f8fafc" }}>
+            El codigo de verificacion no se puede consultar en texto plano desde este panel. El backend lo guarda como hash; el flujo disponible es asignar rol, enviar/reintentar codigo por correo y validar el codigo ingresado por el usuario.
+          </div>
+
           {/* Tabla de Usuarios */}
           <div style={{ background: "#fff", borderRadius: "20px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
@@ -240,7 +244,7 @@ export function GestionUsuariosPage() {
                       <td style={{ padding: "16px 24px", fontWeight: "600" }}>{u.nombre}</td>
                       <td style={{ padding: "16px 24px" }}>{u.email}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <span style={{ padding: "4px 10px", borderRadius: "8px", background: "#f0f0f0", fontSize: "0.75rem", fontWeight: "700" }}>{u.rol}</span>
+                        <span style={{ padding: "4px 10px", borderRadius: "8px", background: "#f0f0f0", fontSize: "0.75rem", fontWeight: "700" }}>{u.rol ?? "SIN_ROL"}</span>
                       </td>
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{ 
@@ -249,8 +253,8 @@ export function GestionUsuariosPage() {
                           gap: "6px", 
                           padding: "4px 10px", 
                           borderRadius: "8px", 
-                          background: u.estado === "ACTIVO" ? "#e6f7ed" : "#fff0f1",
-                          color: u.estado === "ACTIVO" ? "#007a2f" : "#d1141f",
+                          background: u.estado === "ACTIVO" ? "#e6f7ed" : u.estado?.startsWith("PENDIENTE") ? "#fffcf0" : "#fff0f1",
+                          color: u.estado === "ACTIVO" ? "#007a2f" : u.estado?.startsWith("PENDIENTE") ? "#7a5b00" : "#d1141f",
                           fontSize: "0.75rem",
                           fontWeight: "700"
                         }}>

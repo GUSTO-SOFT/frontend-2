@@ -95,6 +95,9 @@ export function LoginPage() {
               <a className="login-link" href="#olvide-contrasena">
                 Olvidé mi contraseña
               </a>
+              <a className="login-link" href="#registro">
+                Crear cuenta
+              </a>
               <span>GASTRO-SYSTEM EXCELLENCE</span>
             </div>
           </form>

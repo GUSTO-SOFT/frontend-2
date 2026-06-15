@@ -3,6 +3,7 @@ import { useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { RegistroUsuarioPage } from "./pages/RegistroUsuarioPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { CrearIngredientePage } from "./pages/CrearIngredientePage";
@@ -43,6 +44,7 @@ type Vista =
 
 type AuthVista =
   | { nombre: "login" }
+  | { nombre: "registro" }
   | { nombre: "forgot-password" }
   | { nombre: "reset-password"; token: string | null };
 
@@ -95,6 +97,7 @@ function tokenDesdeHash(hash: string) {
 function authVistaDesdeHash(): AuthVista {
   const hash = window.location.hash;
   if (!hash || hash === "#login") return { nombre: "login" };
+  if (hash === "#registro") return { nombre: "registro" };
   if (hash.startsWith("#olvide-contrasena")) return { nombre: "forgot-password" };
   if (hash.startsWith("#restablecer-contrasena")) {
     return { nombre: "reset-password", token: tokenDesdeHash(hash) };
@@ -115,6 +118,7 @@ export function App() {
 
   if (!isAuthenticated) {
     const authVista = authVistaDesdeHash();
+    if (authVista.nombre === "registro") return <RegistroUsuarioPage />;
     if (authVista.nombre === "forgot-password") return <ForgotPasswordPage />;
     if (authVista.nombre === "reset-password") return <ResetPasswordPage token={authVista.token} />;
     return <LoginPage />;
