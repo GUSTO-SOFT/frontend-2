@@ -3,7 +3,14 @@ import axios from "axios";
 import { useAuth } from "../auth/AuthContext";
 import { Sidebar } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
-import {getUsuarios,createUsuario,updateUsuario,updateUsuarioEstado,} from "../services/usuariosService";
+import {
+  getUsuarios,
+  createUsuario,
+  createRegistrationCode,
+  updateUsuario,
+  updateUsuarioRol,
+  updateUsuarioEstado,
+} from "../services/usuariosService";
 import type { Usuario, Rol, UsuarioEstado, ApiErrorBody } from "../types";
 
 const PAGE_SIZE = 10;
@@ -16,11 +23,22 @@ export function GestionUsuariosPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Rol | "TODOS">("TODOS");
+  const [statusFilter, setStatusFilter] = useState<UsuarioEstado | "TODOS">("TODOS");
   const [toast, setToast] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+  const [assignRoleUser, setAssignRoleUser] = useState<Usuario | null>(null);
+  const [assignRoleSelection, setAssignRoleSelection] = useState<Rol>("MESERO");
+  const [assigningRole, setAssigningRole] = useState(false);
   const [stats, setStats] = useState({ ADMIN: 0, MESERO: 0, CHEF: 0, CAJERO: 0 });
   const [showPassword, setShowPassword] = useState(false);
+  const [registrationCode, setRegistrationCode] = useState<{
+    codigo: string;
+    expires_at: string;
+    expires_in_minutes: number;
+  } | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -34,13 +52,14 @@ export function GestionUsuariosPage() {
 
   useEffect(() => {
     fetchUsuarios();
-  }, [page, roleFilter, search]);
+  }, [page, roleFilter, statusFilter, search]);
 
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-          const response = await getUsuarios({
-        rol: roleFilter === "TODOS" ? undefined : roleFilter
+      const response = await getUsuarios({
+        rol: roleFilter === "TODOS" ? undefined : roleFilter,
+        estado: statusFilter === "TODOS" ? undefined : statusFilter,
       });
       
       // El backend devuelve un array plano de usuarios
@@ -123,6 +142,25 @@ export function GestionUsuariosPage() {
     setEditingUser(null);
   };
 
+  const handleGenerateRegistrationCode = async () => {
+    setCodeError(null);
+    setCodeLoading(true);
+    try {
+      const code = await createRegistrationCode();
+      setRegistrationCode(code);
+      setToast("Código de registro generado. Copia el código ahora, no se mostrará de nuevo.");
+    } catch (error: unknown) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setCodeError(Array.isArray(message) ? message[0] : message || "No se pudo generar el código");
+      } else {
+        setCodeError("No se pudo generar el código de registro");
+      }
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
   const handleEdit = (u: Usuario) => {
     setEditingUser(u);
     setFormData({
@@ -145,6 +183,27 @@ export function GestionUsuariosPage() {
       fetchUsuarios();
     } catch (error) {
       setToast("Error al cambiar estado");
+    }
+  };
+
+  const handleAssignRole = async () => {
+    if (!assignRoleUser) return;
+    setAssigningRole(true);
+
+    try {
+      await updateUsuarioRol(assignRoleUser.id, assignRoleSelection);
+      setToast(`Rol asignado a ${assignRoleUser.nombre}.`);
+      setAssignRoleUser(null);
+      fetchUsuarios();
+    } catch (error: any) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setToast(Array.isArray(message) ? message[0] : message || "Error al asignar el rol");
+      } else {
+        setToast("Error al asignar el rol");
+      }
+    } finally {
+      setAssigningRole(false);
     }
   };
 
@@ -188,7 +247,7 @@ export function GestionUsuariosPage() {
           </div>
 
           <div className="toolbar" style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", gap: "16px", flex: 1 }}>
+            <div style={{ display: "flex", gap: "16px", flex: 1, flexWrap: "wrap", alignItems: "center" }}>
               <input 
                 type="text" 
                 placeholder="Buscar por nombre o correo..." 
@@ -207,15 +266,57 @@ export function GestionUsuariosPage() {
                 <option value="CHEF">Chefs</option>
                 <option value="CAJERO">Cajeros</option>
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={{ padding: "10px 16px", borderRadius: "12px", border: "1px solid #e3e9f2" }}
+              >
+                <option value="TODOS">Todos los estados</option>
+                <option value="ACTIVO">Activos</option>
+                <option value="INACTIVO">Inactivos</option>
+                <option value="PENDIENTE_ASIGNACION_ROL">Pendiente Asignación Rol</option>
+                <option value="PENDIENTE_VERIFICACION">Pendiente Verificación</option>
+              </select>
             </div>
-            <button 
-              className="primary-button" 
-              onClick={() => { resetForm(); setShowModal(true); }}
-              style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
-            >
-              + Nuevo Usuario
-            </button>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button 
+                className="secondary-button"
+                onClick={handleGenerateRegistrationCode}
+                disabled={codeLoading}
+                style={{ width: "auto", padding: "0 24px", minWidth: "180px" }}
+              >
+                {codeLoading ? "Generando..." : "Generar código de registro"}
+              </button>
+              <button 
+                className="primary-button" 
+                onClick={() => { resetForm(); setShowModal(true); }}
+                style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
+              >
+                + Nuevo Usuario
+              </button>
+            </div>
           </div>
+
+          {registrationCode && (
+            <div style={{ marginBottom: "24px", padding: "20px", borderRadius: "16px", background: "#f8f9fa", border: "1px solid #e3e9f2" }}>
+              <h3 style={{ margin: 0, marginBottom: "8px" }}>Código de registro creado</h3>
+              <p style={{ margin: 0, color: "#334155" }}>
+                Copia el código ahora. Solo se muestra una vez.
+              </p>
+              <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <strong style={{ fontSize: "1.1rem", letterSpacing: "0.18em" }}>{registrationCode.codigo}</strong>
+                <span style={{ color: "#475569" }}>
+                  Expira el {new Date(registrationCode.expires_at).toLocaleString()} ({registrationCode.expires_in_minutes} min)
+                </span>
+              </div>
+            </div>
+          )}
+
+          {codeError && (
+            <div style={{ marginBottom: "24px", padding: "16px", borderRadius: "12px", background: "#fff1f2", color: "#b91c1c" }}>
+              {codeError}
+            </div>
+          )}
 
           {/* Tabla de Usuarios */}
           <div style={{ background: "#fff", borderRadius: "20px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
@@ -263,6 +364,15 @@ export function GestionUsuariosPage() {
                         <button onClick={() => toggleStatus(u)} style={{ background: "none", border: "none", cursor: "pointer", color: u.estado === "ACTIVO" ? "#d1141f" : "#007a2f" }}>
                           {u.estado === "ACTIVO" ? "Desactivar" : "Reactivar"}
                         </button>
+                        {u.estado === "PENDIENTE_ASIGNACION_ROL" && (
+                          <button onClick={() => {
+                            setAssignRoleUser(u);
+                            setAssignRoleSelection(u.rol || "MESERO");
+                          }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#0f766e" }}>
+                            Asignar rol
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -357,6 +467,41 @@ export function GestionUsuariosPage() {
           </div>
         )}
 
+        {assignRoleUser && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: "420px" }}>
+              <header className="modal-header">
+                <h2>Asignar rol a {assignRoleUser.nombre}</h2>
+                <button className="modal-close" onClick={() => setAssignRoleUser(null)}>&times;</button>
+              </header>
+              <div className="modal-body">
+                <div className="form-field" style={{ marginBottom: "16px" }}>
+                  <label>Correo</label>
+                  <input type="text" value={assignRoleUser.email} disabled style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ddd", background: "#f8f9fa" }} />
+                </div>
+                <div className="form-field" style={{ marginBottom: "24px" }}>
+                  <label>Rol</label>
+                  <select
+                    value={assignRoleSelection}
+                    onChange={(e) => setAssignRoleSelection(e.target.value as Rol)}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ddd" }}
+                  >
+                    <option value="ADMIN">Administrador</option>
+                    <option value="MESERO">Mesero</option>
+                    <option value="CHEF">Chef</option>
+                    <option value="CAJERO">Cajero</option>
+                  </select>
+                </div>
+                <div className="modal-actions" style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                  <button type="button" className="secondary-button" onClick={() => setAssignRoleUser(null)}>Cancelar</button>
+                  <button type="button" className="primary-button" disabled={assigningRole} style={{ width: "auto", background: "#d1141f", padding: "0 24px" }} onClick={handleAssignRole}>
+                    {assigningRole ? "Asignando..." : "Asignar rol"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {toast && <Toast message={toast} />}
       </main>
     </div>

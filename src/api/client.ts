@@ -6,6 +6,14 @@ export const api = axios.create({
   baseURL: API_URL,
 });
 
+api.interceptors.request.use((request) => {
+  const accessToken = window.sessionStorage.getItem("access_token");
+  if (accessToken && request.headers) {
+    request.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return request;
+});
+
 export function buildApiAssetUrl(url?: string | null) {
   if (!url) return null;
   if (/^https?:\/\//i.test(url)) return url;
@@ -19,7 +27,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("access_token");
+      window.sessionStorage.removeItem("access_token");
+      window.sessionStorage.removeItem("usuario");
       window.location.href = "/login";
     }
     return Promise.reject(error);

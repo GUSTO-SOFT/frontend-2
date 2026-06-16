@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
@@ -43,6 +44,7 @@ type Vista =
 
 type AuthVista =
   | { nombre: "login" }
+  | { nombre: "register" }
   | { nombre: "forgot-password" }
   | { nombre: "reset-password"; token: string | null };
 
@@ -95,6 +97,7 @@ function tokenDesdeHash(hash: string) {
 function authVistaDesdeHash(): AuthVista {
   const hash = window.location.hash;
   if (!hash || hash === "#login") return { nombre: "login" };
+  if (hash === "#registro") return { nombre: "register" };
   if (hash.startsWith("#olvide-contrasena")) return { nombre: "forgot-password" };
   if (hash.startsWith("#restablecer-contrasena")) {
     return { nombre: "reset-password", token: tokenDesdeHash(hash) };
@@ -115,6 +118,7 @@ export function App() {
 
   if (!isAuthenticated) {
     const authVista = authVistaDesdeHash();
+    if (authVista.nombre === "register") return <RegisterPage />;
     if (authVista.nombre === "forgot-password") return <ForgotPasswordPage />;
     if (authVista.nombre === "reset-password") return <ResetPasswordPage token={authVista.token} />;
     return <LoginPage />;

@@ -17,3 +17,23 @@ export async function loginRequest(email: string, password: string) {
 
   return data;
 }
+
+type RegisterPayload = {
+  nombre: string;
+  apellido: string;
+  email: string;
+  password: string;
+  password_confirmacion: string;
+  codigo_registro: string;
+};
+
+export async function registerRequest(payload: RegisterPayload) {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+
+  const { data } = await api.post("/usuarios/registro", {
+    ...payload,
+    email: normalizedEmail,
+  });
+
+  return data;
+}

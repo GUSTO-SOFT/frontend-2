@@ -91,10 +91,15 @@ export function LoginPage() {
               {submitting ? "Ingresando..." : "Iniciar Sesión"}
             </button>
 
-            <div className="login-footer">
+            <div className="login-footer" style={{ justifyContent: "space-between" }}>
               <a className="login-link" href="#olvide-contrasena">
                 Olvidé mi contraseña
               </a>
+              <a className="login-link" href="#registro">
+                Registrarme
+              </a>
+            </div>
+            <div className="login-footer">
               <span>GASTRO-SYSTEM EXCELLENCE</span>
             </div>
           </form>
