@@ -6,12 +6,10 @@ import { Toast } from "../components/Toast";
 import {
   getUsuarios,
   createUsuario,
+  createRegistrationCode,
   updateUsuario,
+  updateUsuarioRol,
   updateUsuarioEstado,
-  asignarRolUsuario,
-  reenviarCodigoVerificacion,
-  getEstadoVerificacion,
-  type VerificacionEstadoResponse,
 } from "../services/usuariosService";
 import type { Usuario, Rol, UsuarioEstado, ApiErrorBody } from "../types";
 
@@ -25,11 +23,22 @@ export function GestionUsuariosPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<Rol | "TODOS">("TODOS");
+  const [statusFilter, setStatusFilter] = useState<UsuarioEstado | "TODOS">("TODOS");
   const [toast, setToast] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+  const [assignRoleUser, setAssignRoleUser] = useState<Usuario | null>(null);
+  const [assignRoleSelection, setAssignRoleSelection] = useState<Rol>("MESERO");
+  const [assigningRole, setAssigningRole] = useState(false);
   const [stats, setStats] = useState({ ADMIN: 0, MESERO: 0, CHEF: 0, CAJERO: 0 });
   const [showPassword, setShowPassword] = useState(false);
+  const [registrationCode, setRegistrationCode] = useState<{
+    codigo: string;
+    expires_at: string;
+    expires_in_minutes: number;
+  } | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   // Verification Modal State
   const [verifStatusUser, setVerifStatusUser] = useState<Usuario | null>(null);
@@ -49,13 +58,14 @@ export function GestionUsuariosPage() {
 
   useEffect(() => {
     fetchUsuarios();
-  }, [page, roleFilter, search]);
+  }, [page, roleFilter, statusFilter, search]);
 
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
       const response = await getUsuarios({
-        rol: roleFilter === "TODOS" ? undefined : roleFilter
+        rol: roleFilter === "TODOS" ? undefined : roleFilter,
+        estado: statusFilter === "TODOS" ? undefined : statusFilter,
       });
       
       const allUsers = Array.isArray(response) ? response : [];
@@ -140,6 +150,25 @@ export function GestionUsuariosPage() {
     setEditingUser(null);
   };
 
+  const handleGenerateRegistrationCode = async () => {
+    setCodeError(null);
+    setCodeLoading(true);
+    try {
+      const code = await createRegistrationCode();
+      setRegistrationCode(code);
+      setToast("Código de registro generado. Copia el código ahora, no se mostrará de nuevo.");
+    } catch (error: unknown) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setCodeError(Array.isArray(message) ? message[0] : message || "No se pudo generar el código");
+      } else {
+        setCodeError("No se pudo generar el código de registro");
+      }
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
   const handleEdit = (u: Usuario) => {
     setEditingUser(u);
     setFormData({
@@ -165,57 +194,24 @@ export function GestionUsuariosPage() {
     }
   };
 
-  // View verification details
-  const handleViewVerification = async (u: Usuario) => {
-    setVerifStatusUser(u);
-    setLoadingVerif(true);
-    setVerifData(null);
-    try {
-      const data = await getEstadoVerificacion(u.id);
-      setVerifData(data);
-    } catch (err) {
-      console.error(err);
-      setToast("Error al obtener estado de verificación");
-    } finally {
-      setLoadingVerif(false);
-    }
-  };
+  const handleAssignRole = async () => {
+    if (!assignRoleUser) return;
+    setAssigningRole(true);
 
-  // Resend verification code
-  const handleResendCode = async () => {
-    if (!verifStatusUser) return;
-    setActioningVerif(true);
     try {
-      await reenviarCodigoVerificacion(verifStatusUser.id);
-      setToast("Código de verificación reenviado con éxito");
-      // Refrescar modal
-      const data = await getEstadoVerificacion(verifStatusUser.id);
-      setVerifData(data);
-    } catch (err: any) {
-      if (axios.isAxiosError<ApiErrorBody>(err)) {
-        const message = err.response?.data?.message;
-        setToast(Array.isArray(message) ? message[0] : message || "Error al reenviar código");
+      await updateUsuarioRol(assignRoleUser.id, assignRoleSelection);
+      setToast(`Rol asignado a ${assignRoleUser.nombre}.`);
+      setAssignRoleUser(null);
+      fetchUsuarios();
+    } catch (error: any) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setToast(Array.isArray(message) ? message[0] : message || "Error al asignar el rol");
+      } else {
+        setToast("Error al asignar el rol");
       }
     } finally {
-      setActioningVerif(false);
-    }
-  };
-
-  // Direct manual activation
-  const handleManualActivate = async () => {
-    if (!verifStatusUser) return;
-    if (!window.confirm(`¿Deseas activar manualmente la cuenta de ${verifStatusUser.nombre} (Bypass de verificación)?`)) return;
-    setActioningVerif(true);
-    try {
-      await updateUsuarioEstado(verifStatusUser.id, "ACTIVO");
-      setToast("Cuenta activada manualmente con éxito");
-      setVerifStatusUser(null);
-      fetchUsuarios();
-    } catch (err) {
-      console.error(err);
-      setToast("Error al activar la cuenta manualmente");
-    } finally {
-      setActioningVerif(false);
+      setAssigningRole(false);
     }
   };
 
@@ -259,7 +255,7 @@ export function GestionUsuariosPage() {
           </div>
 
           <div className="toolbar" style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", gap: "16px", flex: 1 }}>
+            <div style={{ display: "flex", gap: "16px", flex: 1, flexWrap: "wrap", alignItems: "center" }}>
               <input 
                 type="text" 
                 placeholder="Buscar por nombre o correo..." 
@@ -278,19 +274,57 @@ export function GestionUsuariosPage() {
                 <option value="CHEF">Chefs</option>
                 <option value="CAJERO">Cajeros</option>
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={{ padding: "10px 16px", borderRadius: "12px", border: "1px solid #e3e9f2" }}
+              >
+                <option value="TODOS">Todos los estados</option>
+                <option value="ACTIVO">Activos</option>
+                <option value="INACTIVO">Inactivos</option>
+                <option value="PENDIENTE_ASIGNACION_ROL">Pendiente Asignación Rol</option>
+                <option value="PENDIENTE_VERIFICACION">Pendiente Verificación</option>
+              </select>
             </div>
-            <button 
-              className="primary-button" 
-              onClick={() => { resetForm(); setShowModal(true); }}
-              style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
-            >
-              + Nuevo Usuario
-            </button>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <button 
+                className="secondary-button"
+                onClick={handleGenerateRegistrationCode}
+                disabled={codeLoading}
+                style={{ width: "auto", padding: "0 24px", minWidth: "180px" }}
+              >
+                {codeLoading ? "Generando..." : "Generar código de registro"}
+              </button>
+              <button 
+                className="primary-button" 
+                onClick={() => { resetForm(); setShowModal(true); }}
+                style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
+              >
+                + Nuevo Usuario
+              </button>
+            </div>
           </div>
 
-          <div className="form-error" style={{ marginBottom: "18px", color: "#344054", borderColor: "#d8deea", background: "#f8fafc" }}>
-            Los códigos de verificación se envían por correo. Desde este panel, puedes consultar el estado del envío, reenviar códigos y activar cuentas manualmente si el correo no se entrega correctamente.
-          </div>
+          {registrationCode && (
+            <div style={{ marginBottom: "24px", padding: "20px", borderRadius: "16px", background: "#f8f9fa", border: "1px solid #e3e9f2" }}>
+              <h3 style={{ margin: 0, marginBottom: "8px" }}>Código de registro creado</h3>
+              <p style={{ margin: 0, color: "#334155" }}>
+                Copia el código ahora. Solo se muestra una vez.
+              </p>
+              <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                <strong style={{ fontSize: "1.1rem", letterSpacing: "0.18em" }}>{registrationCode.codigo}</strong>
+                <span style={{ color: "#475569" }}>
+                  Expira el {new Date(registrationCode.expires_at).toLocaleString()} ({registrationCode.expires_in_minutes} min)
+                </span>
+              </div>
+            </div>
+          )}
+
+          {codeError && (
+            <div style={{ marginBottom: "24px", padding: "16px", borderRadius: "12px", background: "#fff1f2", color: "#b91c1c" }}>
+              {codeError}
+            </div>
+          )}
 
           {/* Tabla de Usuarios */}
           <div style={{ background: "#fff", borderRadius: "20px", overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
@@ -374,6 +408,15 @@ export function GestionUsuariosPage() {
                         >
                           {u.estado === "ACTIVO" ? "Desactivar" : "Reactivar"}
                         </button>
+                        {u.estado === "PENDIENTE_ASIGNACION_ROL" && (
+                          <button onClick={() => {
+                            setAssignRoleUser(u);
+                            setAssignRoleSelection(u.rol || "MESERO");
+                          }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#0f766e" }}>
+                            Asignar rol
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -468,95 +511,41 @@ export function GestionUsuariosPage() {
           </div>
         )}
 
-        {/* Modal Detalles Verificación */}
-        {verifStatusUser && (
+        {assignRoleUser && (
           <div className="modal-overlay">
-            <div className="modal-content" style={{ maxWidth: "550px" }}>
+            <div className="modal-content" style={{ maxWidth: "420px" }}>
               <header className="modal-header">
-                <h2>Código de Verificación</h2>
-                <button className="modal-close" onClick={() => setVerifStatusUser(null)}>&times;</button>
+                <h2>Asignar rol a {assignRoleUser.nombre}</h2>
+                <button className="modal-close" onClick={() => setAssignRoleUser(null)}>&times;</button>
               </header>
-              <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <strong>Empleado:</strong> {verifStatusUser.nombre} ({verifStatusUser.email})
+              <div className="modal-body">
+                <div className="form-field" style={{ marginBottom: "16px" }}>
+                  <label>Correo</label>
+                  <input type="text" value={assignRoleUser.email} disabled style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ddd", background: "#f8f9fa" }} />
                 </div>
-
-                {loadingVerif ? (
-                  <div style={{ textAlign: "center", padding: "20px" }}>Consultando estado...</div>
-                ) : verifData ? (
-                  <div style={{ background: "#f8fafc", border: "1px solid #e3e9f2", borderRadius: "12px", padding: "16px", fontSize: "0.9rem", display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div>
-                      <strong>Estado del código:</strong>{" "}
-                      <span style={{ 
-                        color: verifData.codigo_disponible ? "#007a2f" : "#d1141f", 
-                        fontWeight: "700" 
-                      }}>
-                        {verifData.codigo_disponible ? "Vigente / Activo" : "No disponible / Expirado"}
-                      </span>
-                    </div>
-
-                    {verifData.expires_at && (
-                      <div>
-                        <strong>Expira en:</strong> {new Date(verifData.expires_at).toLocaleString()}
-                      </div>
-                    )}
-
-                    <div>
-                      <strong>Estado del correo:</strong>{" "}
-                      <span style={{ 
-                        color: verifData.envio_estado === "ENVIADO" ? "#007a2f" : "#d1141f", 
-                        fontWeight: "700" 
-                      }}>
-                        {verifData.envio_estado || "No enviado"}
-                      </span>
-                    </div>
-
-                    {verifData.detalle_error && (
-                      <div style={{ color: "#d1141f", fontSize: "0.8rem", background: "#fff0f1", padding: "8px", borderRadius: "6px", border: "1px solid #ffd0d3" }}>
-                        <strong>Error SMTP:</strong> {verifData.detalle_error}
-                      </div>
-                    )}
-
-                    {verifData.sent_at && (
-                      <div>
-                        <strong>Enviado el:</strong> {new Date(verifData.sent_at).toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ color: "#d1141f" }}>No se pudo obtener la información de verificación.</div>
-                )}
-
-                <div style={{ borderTop: "1px solid #eee", paddingTop: "16px", marginTop: "8px" }}>
-                  <p style={{ fontSize: "0.8rem", color: "#667085", marginBottom: "16px" }}>
-                    ⚠️ <em>Nota: El backend almacena el código como hash SHA-256 en la base de datos por motivos de seguridad. Si el correo no llega debido a problemas de configuración SMTP, puedes activar al usuario manualmente aquí.</em>
-                  </p>
-                  <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                    <button 
-                      type="button" 
-                      className="secondary-button" 
-                      onClick={handleResendCode} 
-                      disabled={actioningVerif || loadingVerif}
-                      style={{ padding: "10px 16px" }}
-                    >
-                      {actioningVerif ? "Reenviando..." : "✉️ Reenviar Correo"}
-                    </button>
-                    <button 
-                      type="button" 
-                      className="primary-button" 
-                      onClick={handleManualActivate} 
-                      disabled={actioningVerif || loadingVerif}
-                      style={{ background: "#007a2f", padding: "10px 16px", color: "#fff", width: "auto" }}
-                    >
-                      ✅ Activar Manualmente
-                    </button>
-                  </div>
+                <div className="form-field" style={{ marginBottom: "24px" }}>
+                  <label>Rol</label>
+                  <select
+                    value={assignRoleSelection}
+                    onChange={(e) => setAssignRoleSelection(e.target.value as Rol)}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ddd" }}
+                  >
+                    <option value="ADMIN">Administrador</option>
+                    <option value="MESERO">Mesero</option>
+                    <option value="CHEF">Chef</option>
+                    <option value="CAJERO">Cajero</option>
+                  </select>
+                </div>
+                <div className="modal-actions" style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                  <button type="button" className="secondary-button" onClick={() => setAssignRoleUser(null)}>Cancelar</button>
+                  <button type="button" className="primary-button" disabled={assigningRole} style={{ width: "auto", background: "#d1141f", padding: "0 24px" }} onClick={handleAssignRole}>
+                    {assigningRole ? "Asignando..." : "Asignar rol"}
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         )}
-
         {toast && <Toast message={toast} />}
       </main>
     </div>

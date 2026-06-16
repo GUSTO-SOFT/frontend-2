@@ -4,12 +4,7 @@ export type MesaEstado = "DISPONIBLE" | "OCUPADA";
 
 export type MesaEstadoColor = "verde" | "rojo";
 
-export type UsuarioEstado =
-  | "ACTIVO"
-  | "INACTIVO"
-  | "PENDIENTE_ASIGNACION_ROL"
-  | "PENDIENTE_VERIFICACION"
-  | "EXPIRADO";
+export type UsuarioEstado = "ACTIVO" | "INACTIVO" | "PENDIENTE_ASIGNACION_ROL" | "PENDIENTE_VERIFICACION";
 
 export type Usuario = {
   id: number;
