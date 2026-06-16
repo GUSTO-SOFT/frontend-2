@@ -10,7 +10,7 @@ export type Usuario = {
   id: number;
   nombre: string;
   email: string;
-  rol: Rol;
+  rol: Rol | null;
   estado?: UsuarioEstado;
   created_at?: string;
   updated_at?: string;

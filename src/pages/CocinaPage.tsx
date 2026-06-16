@@ -15,7 +15,6 @@ const ESTADO_LABELS: Record<string, string> = {
   ENTREGADO: "Entregado",
 };
 
-
 export function CocinaPage() {
   const { rol } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -48,7 +47,7 @@ export function CocinaPage() {
   }, []);
 
   const handleUpdateEstado = async (id: number, nuevoEstado: string) => {
-     if (!canManageKitchen) return;
+    if (!canManageKitchen) return;
 
     try {
       await updateEstadoPedido(id, nuevoEstado);
@@ -59,7 +58,6 @@ export function CocinaPage() {
         window.setTimeout(() => setToast(null), 3000);
       }
     } catch (err: any) {
-
       const msg = err.response?.data?.message || "Error al actualizar pedido";
       setToast({ message: msg, type: "error" });
       window.setTimeout(() => setToast(null), 5000);
@@ -81,7 +79,6 @@ export function CocinaPage() {
     }
   };
 
-
   return (
     <div className="app-shell">
       <Sidebar />
@@ -94,10 +91,10 @@ export function CocinaPage() {
         </header>
 
         <div className="content">
-        {canManageKitchen ? <AlertasBanner /> : null}
+          {canManageKitchen ? <AlertasBanner /> : null}
           {error && <div className="form-error">{error}</div>}
-        
-        {loading && pedidos.length === 0 ? (
+
+          {loading && pedidos.length === 0 ? (
             <p>Cargando pedidos...</p>
           ) : (
             <div className="kds-grid">

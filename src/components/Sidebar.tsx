@@ -92,7 +92,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const { rol, logout } = useAuth();
   const currentHash = window.location.hash || "#menu";
-   const [expandedMenu, setExpandedMenu] = useState<string | null>(
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(
     currentHash.startsWith("#inventario") || currentHash === "#movimientos-stock" ? "Inventario" : null,
   );
 
@@ -132,7 +132,6 @@ export function Sidebar() {
                 type="button"
                 onClick={() => setExpandedMenu(isMenuExpanded(item.label) ? null : item.label)}
                 className={`side-nav__item ${isMenuExpanded(item.label) ? "side-nav__item--active" : ""}`}
-               
               >
                 <span className="side-nav__content">
                   {item.icon}
@@ -157,7 +156,6 @@ export function Sidebar() {
               <a 
                 className={`side-nav__item ${isActive(item.href) ? "side-nav__item--active" : ""}`}
                 href={item.href}
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
                 {item.icon}
                 {item.label}
@@ -171,8 +169,7 @@ export function Sidebar() {
                   <a
                     key={subitem.label}
                     href={subitem.href}
-                    className={`side-nav__item ${isActive(subitem.href) ? "side-nav__item--active" : ""}`}            
-              
+                    className={`side-nav__item ${isActive(subitem.href) ? "side-nav__item--active" : ""}`}
                   >
                     <svg
                       width="12"

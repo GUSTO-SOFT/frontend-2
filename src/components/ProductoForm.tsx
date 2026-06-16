@@ -57,7 +57,7 @@ export function ProductoForm({ onSuccess, onCancel, onToast }: Props) {
       newErrors.precio = "El precio debe ser mayor a 0";
     }
     if (formData.tiempo_preparacion <= 0) newErrors.tiempo_preparacion = "El tiempo debe ser mayor a 0";
-     if (formData.ingredientes.length === 0) {
+    if (formData.ingredientes.length === 0) {
       newErrors.ingredientes = "Agrega al menos un ingrediente";
     } else if (formData.ingredientes.some((item) => !item.ingrediente_id || item.cantidad <= 0)) {
       newErrors.ingredientes = "Cada ingrediente debe tener una cantidad mayor a 0";

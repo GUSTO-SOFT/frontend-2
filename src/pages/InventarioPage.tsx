@@ -88,28 +88,31 @@ export function InventarioPage() {
     <div className="app-shell">
       <Sidebar />
       <main className="main-panel">
-        <header className="topbar" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div><h1 style={{ margin: 0 }}>Gestión de inventario</h1></div>
+        <header className="topbar">
+          <div>
+            <h1>Gestión de inventario</h1>
+            <p className="topbar__subtitle">Existencias, alertas y movimientos del restaurante.</p>
+          </div>
           <div className="session-user"><strong>{usuario?.nombre}</strong><span>{rol}</span></div>
         </header>
 
         {toast && <Toast message={toast.message} type={toast.type} />}
 
         <section className="content">
-          <div style={{ display: "grid", gap: "24px" }}>
+          <div className="page-stack">
             {isAlertasView ? <AlertasBanner mode="page" /> : null}
             {isAlertasView ? null : !isChef ? (
               <>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                  <p style={{ margin: 0, color: "#667085", fontSize: "0.95rem" }}>Gestión de existencias en tiempo real.</p>
+                <div className="page-actions">
+                  <p className="page-intro">Gestión de existencias en tiempo real.</p>
                   {isAdmin && (
-                    <button type="button" onClick={() => { window.location.hash = "#inventario/nuevo"; }} className="primary-button" style={{ width: "auto", background: "#d1141f" }}>
+                    <button type="button" onClick={() => { window.location.hash = "#inventario/nuevo"; }} className="primary-button primary-button--brand">
                       Agregar ingrediente
                     </button>
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "18px" }}>
+                <div className="metric-grid">
                   {[
                     { label: "Total", value: stats.total, color: "#0f172a" },
                     { label: "Activos", value: stats.activos, color: "#047857" },
@@ -121,17 +124,10 @@ export function InventarioPage() {
                       role={s.clickable ? "button" : undefined}
                       tabIndex={s.clickable ? 0 : undefined}
                       onKeyDown={s.clickable ? (e) => { if (e.key === "Enter" || e.key === " ") window.location.hash = "#inventario/alertas"; } : undefined}
-                      style={{
-                        background: "#fff",
-                        borderRadius: "24px",
-                        padding: "22px",
-                        boxShadow: "0 20px 50px rgba(15, 23, 42, 0.08)",
-                        cursor: s.clickable ? "pointer" : "default",
-                        border: s.clickable ? "1px solid #f0f0f0" : "none",
-                      }}
+                      className={`metric-card ${s.clickable ? "metric-card--clickable" : ""}`}
                     >
-                      <span style={{ display: "block", color: "#94a3b8", fontSize: "0.85rem", fontWeight: 700 }}>{s.label}</span>
-                      <div style={{ marginTop: "12px", fontSize: "2rem", fontWeight: 800, color: s.color }}>{s.value}</div>
+                      <span>{s.label}</span>
+                      <strong style={{ color: s.color }}>{s.value}</strong>
                     </div>
                   ))}
                 </div>
@@ -149,8 +145,8 @@ export function InventarioPage() {
                 />
               </>
             ) : (
-              <div style={{ background: "#fff", borderRadius: "24px", padding: "40px", textAlign: "center", boxShadow: "0 10px 40px rgba(0,0,0,0.03)" }}>
-                <p style={{ color: "#667085" }}>Vista de alertas habilitada para Chef. La gestión completa requiere rol Administrador.</p>
+              <div className="panel panel--center">
+                <p>Vista de alertas habilitada para Chef. La gestión completa requiere rol Administrador.</p>
               </div>
             )}
           </div>

@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+const defaultApiUrl = import.meta.env.DEV
+  ? "http://localhost:3000"
+  : "https://gusto-soft-backend.onrender.com";
+
+export const API_URL = (import.meta.env.VITE_API_URL ?? defaultApiUrl).replace(/\/api\/?$/, "");
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -23,6 +27,14 @@ export function buildApiAssetUrl(url?: string | null) {
   return `${base}${path}`;
 }
 
+api.interceptors.request.use((config) => {
+  const token = sessionStorage.getItem("access_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -32,6 +44,6 @@ api.interceptors.response.use(
       window.location.href = "/login";
     }
     return Promise.reject(error);
-  }
+  },
 );
 

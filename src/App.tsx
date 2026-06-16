@@ -4,6 +4,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { RegistroUsuarioPage } from "./pages/RegistroUsuarioPage";
 import { MesasSalonPage } from "./pages/MesasSalonPage";
 import { InventarioPage } from "./pages/InventarioPage";
 import { CrearIngredientePage } from "./pages/CrearIngredientePage";

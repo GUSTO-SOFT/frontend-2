@@ -40,6 +40,12 @@ export function GestionUsuariosPage() {
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
 
+  // Verification Modal State
+  const [verifStatusUser, setVerifStatusUser] = useState<Usuario | null>(null);
+  const [verifData, setVerifData] = useState<VerificacionEstadoResponse | null>(null);
+  const [loadingVerif, setLoadingVerif] = useState(false);
+  const [actioningVerif, setActioningVerif] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState({
     nombre: "",
@@ -62,19 +68,15 @@ export function GestionUsuariosPage() {
         estado: statusFilter === "TODOS" ? undefined : statusFilter,
       });
       
-      // El backend devuelve un array plano de usuarios
       const allUsers = Array.isArray(response) ? response : [];
       
-      // Aplicar búsqueda localmente
       const filtered = allUsers.filter(u => 
         u.nombre.toLowerCase().includes(search.toLowerCase()) || 
         u.email.toLowerCase().includes(search.toLowerCase())
       );
 
       setUsuarios(filtered);
-      setTotalPages(Math.ceil(filtered.length / PAGE_SIZE));
-
-      // Actualizar estadísticas con todos los datos obtenidos
+      setTotalPages(Math.ceil(filtered.length / PAGE_SIZE) || 1);
       updateStats(allUsers);
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
@@ -87,7 +89,7 @@ export function GestionUsuariosPage() {
   const updateStats = (data: Usuario[]) => {
     const newStats = { ADMIN: 0, MESERO: 0, CHEF: 0, CAJERO: 0 };
     data.forEach(u => {
-      if (newStats[u.rol] !== undefined) newStats[u.rol]++;
+      if (u.rol && newStats[u.rol] !== undefined) newStats[u.rol]++;
     });
     setStats(newStats);
   };
@@ -113,12 +115,18 @@ export function GestionUsuariosPage() {
     setSubmitting(true);
     try {
       if (editingUser) {
-        await updateUsuario(editingUser.id, {
-          nombre: formData.nombre,
-          email: formData.email,
-          rol: formData.rol
-        });
-        setToast("Usuario actualizado con éxito");
+        if (editingUser.estado === "PENDIENTE_ASIGNACION_ROL") {
+          // Asignar rol y detonar verificación
+          await asignarRolUsuario(editingUser.id, formData.rol);
+          setToast("Rol asignado e inicio de verificación detonado con éxito");
+        } else {
+          await updateUsuario(editingUser.id, {
+            nombre: formData.nombre,
+            email: formData.email,
+            rol: formData.rol
+          });
+          setToast("Usuario actualizado con éxito");
+        }
       } else {
         await createUsuario(formData);
         setToast("Usuario creado con éxito");
@@ -167,7 +175,7 @@ export function GestionUsuariosPage() {
       nombre: u.nombre,
       email: u.email,
       password: "",
-      rol: u.rol
+      rol: u.rol ?? "MESERO"
     });
     setShowModal(true);
   };
@@ -341,7 +349,7 @@ export function GestionUsuariosPage() {
                       <td style={{ padding: "16px 24px", fontWeight: "600" }}>{u.nombre}</td>
                       <td style={{ padding: "16px 24px" }}>{u.email}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <span style={{ padding: "4px 10px", borderRadius: "8px", background: "#f0f0f0", fontSize: "0.75rem", fontWeight: "700" }}>{u.rol}</span>
+                        <span style={{ padding: "4px 10px", borderRadius: "8px", background: "#f0f0f0", fontSize: "0.75rem", fontWeight: "700" }}>{u.rol ?? "SIN_ROL"}</span>
                       </td>
                       <td style={{ padding: "16px 24px" }}>
                         <span style={{ 
@@ -350,8 +358,8 @@ export function GestionUsuariosPage() {
                           gap: "6px", 
                           padding: "4px 10px", 
                           borderRadius: "8px", 
-                          background: u.estado === "ACTIVO" ? "#e6f7ed" : "#fff0f1",
-                          color: u.estado === "ACTIVO" ? "#007a2f" : "#d1141f",
+                          background: u.estado === "ACTIVO" ? "#e6f7ed" : u.estado?.startsWith("PENDIENTE") ? "#fffcf0" : "#fff0f1",
+                          color: u.estado === "ACTIVO" ? "#007a2f" : u.estado?.startsWith("PENDIENTE") ? "#7a5b00" : "#d1141f",
                           fontSize: "0.75rem",
                           fontWeight: "700"
                         }}>
@@ -359,9 +367,45 @@ export function GestionUsuariosPage() {
                           {u.estado}
                         </span>
                       </td>
-                      <td style={{ padding: "16px 24px", display: "flex", gap: "8px" }}>
-                        <button onClick={() => handleEdit(u)} style={{ background: "none", border: "none", cursor: "pointer", color: "#667085" }}>✎</button>
-                        <button onClick={() => toggleStatus(u)} style={{ background: "none", border: "none", cursor: "pointer", color: u.estado === "ACTIVO" ? "#d1141f" : "#007a2f" }}>
+                      <td style={{ padding: "16px 24px", display: "flex", gap: "8px", alignItems: "center" }}>
+                        <button 
+                          onClick={() => handleEdit(u)} 
+                          title="Editar"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#667085", fontSize: "1.1rem" }}
+                        >
+                          ✎
+                        </button>
+                        
+                        {u.estado === "PENDIENTE_VERIFICACION" && (
+                          <button 
+                            onClick={() => handleViewVerification(u)}
+                            title="Gestionar Verificación"
+                            style={{ 
+                              background: "#f8fafc", 
+                              border: "1px solid #d8deea", 
+                              borderRadius: "6px", 
+                              padding: "4px 8px", 
+                              cursor: "pointer", 
+                              color: "#7a5b00",
+                              fontSize: "0.75rem",
+                              fontWeight: "600"
+                            }}
+                          >
+                            🔑 Código
+                          </button>
+                        )}
+
+                        <button 
+                          onClick={() => toggleStatus(u)} 
+                          style={{ 
+                            background: "none", 
+                            border: "none", 
+                            cursor: "pointer", 
+                            color: u.estado === "ACTIVO" ? "#d1141f" : "#007a2f",
+                            fontWeight: "600",
+                            fontSize: "0.85rem"
+                          }}
+                        >
                           {u.estado === "ACTIVO" ? "Desactivar" : "Reactivar"}
                         </button>
                         {u.estado === "PENDIENTE_ASIGNACION_ROL" && (
