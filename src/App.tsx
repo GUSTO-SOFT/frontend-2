@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { RegistroUsuarioPage } from "./pages/RegistroUsuarioPage";
@@ -119,7 +118,7 @@ export function App() {
 
   if (!isAuthenticated) {
     const authVista = authVistaDesdeHash();
-    if (authVista.nombre === "register") return <RegisterPage />;
+    if (authVista.nombre === "register") return <RegistroUsuarioPage />;
     if (authVista.nombre === "forgot-password") return <ForgotPasswordPage />;
     if (authVista.nombre === "reset-password") return <ResetPasswordPage token={authVista.token} />;
     return <LoginPage />;

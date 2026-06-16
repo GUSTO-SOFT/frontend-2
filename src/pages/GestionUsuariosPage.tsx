@@ -7,9 +7,12 @@ import {
   getUsuarios,
   createUsuario,
   createRegistrationCode,
+  getEstadoVerificacion,
+  reenviarCodigoVerificacion,
   updateUsuario,
   updateUsuarioRol,
   updateUsuarioEstado,
+  type VerificacionEstadoResponse,
 } from "../services/usuariosService";
 import type { Usuario, Rol, UsuarioEstado, ApiErrorBody } from "../types";
 
@@ -117,7 +120,7 @@ export function GestionUsuariosPage() {
       if (editingUser) {
         if (editingUser.estado === "PENDIENTE_ASIGNACION_ROL") {
           // Asignar rol y detonar verificación
-          await asignarRolUsuario(editingUser.id, formData.rol);
+          await updateUsuarioRol(editingUser.id, formData.rol);
           setToast("Rol asignado e inicio de verificación detonado con éxito");
         } else {
           await updateUsuario(editingUser.id, {
@@ -212,6 +215,48 @@ export function GestionUsuariosPage() {
       }
     } finally {
       setAssigningRole(false);
+    }
+  };
+
+  const handleViewVerification = async (u: Usuario) => {
+    setVerifStatusUser(u);
+    setVerifData(null);
+    setLoadingVerif(true);
+
+    try {
+      const data = await getEstadoVerificacion(u.id);
+      setVerifData(data);
+    } catch (error: unknown) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setToast(Array.isArray(message) ? message[0] : message || "No se pudo consultar la verificación");
+      } else {
+        setToast("No se pudo consultar la verificación");
+      }
+      setVerifStatusUser(null);
+    } finally {
+      setLoadingVerif(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verifStatusUser) return;
+    setActioningVerif(true);
+
+    try {
+      await reenviarCodigoVerificacion(verifStatusUser.id);
+      const data = await getEstadoVerificacion(verifStatusUser.id);
+      setVerifData(data);
+      setToast(`Código reenviado a ${verifStatusUser.email}`);
+    } catch (error: unknown) {
+      if (axios.isAxiosError<ApiErrorBody>(error)) {
+        const message = error.response?.data?.message;
+        setToast(Array.isArray(message) ? message[0] : message || "No se pudo reenviar el código");
+      } else {
+        setToast("No se pudo reenviar el código");
+      }
+    } finally {
+      setActioningVerif(false);
     }
   };
 
@@ -542,6 +587,60 @@ export function GestionUsuariosPage() {
                     {assigningRole ? "Asignando..." : "Asignar rol"}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {verifStatusUser && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: "460px" }}>
+              <header className="modal-header">
+                <h2>Verificación de {verifStatusUser.nombre}</h2>
+                <button className="modal-close" onClick={() => setVerifStatusUser(null)}>&times;</button>
+              </header>
+              <div className="modal-body">
+                {loadingVerif ? (
+                  <p style={{ margin: 0 }}>Consultando estado...</p>
+                ) : (
+                  <>
+                    <div style={{ display: "grid", gap: "10px", marginBottom: "20px" }}>
+                      <p style={{ margin: 0 }}>
+                        <strong>Correo:</strong> {verifStatusUser.email}
+                      </p>
+                      <p style={{ margin: 0 }}>
+                        <strong>Código vigente:</strong> {verifData?.codigo_disponible ? "Sí" : "No"}
+                      </p>
+                      <p style={{ margin: 0 }}>
+                        <strong>Envío:</strong> {verifData?.envio_estado ?? "Sin registro"}
+                      </p>
+                      {verifData?.expires_at && (
+                        <p style={{ margin: 0 }}>
+                          <strong>Expira:</strong> {new Date(verifData.expires_at).toLocaleString()}
+                        </p>
+                      )}
+                      {verifData?.detalle_error && (
+                        <p style={{ margin: 0, color: "#b91c1c" }}>
+                          <strong>Error:</strong> {verifData.detalle_error}
+                        </p>
+                      )}
+                    </div>
+                    <div className="modal-actions" style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                      <button type="button" className="secondary-button" onClick={() => setVerifStatusUser(null)}>
+                        Cerrar
+                      </button>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        disabled={actioningVerif}
+                        style={{ width: "auto", background: "#d1141f", padding: "0 24px" }}
+                        onClick={handleResendVerification}
+                      >
+                        {actioningVerif ? "Reenviando..." : "Reenviar código"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
