@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import axios from "axios";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Toast } from "../components/Toast";
@@ -311,3 +312,7 @@ export function RegistroUsuarioPage() {
     </main>
   );
 }
+=======
+export { RegisterPage as RegistroUsuarioPage } from './RegisterPage';
+export default undefined;
+>>>>>>> 119db5d (actulizacion)

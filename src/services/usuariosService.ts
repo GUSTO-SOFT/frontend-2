@@ -46,3 +46,33 @@ export async function getMeserosActivos() {
   const { data } = await api.get<Usuario[]>("/usuarios/meseros/disponibles");
   return data;
 }
+
+// Compatibilidad - nombres en español usados por archivos antiguos/CI
+export type VerificacionEstadoResponse = {
+  estado: string;
+  enviado_en?: string | null;
+};
+
+export async function registrarUsuario(payload: { nombre: string; apellido?: string; email: string; password: string; password_confirmacion?: string; codigo_registro: string }) {
+  const { data } = await api.post('/usuarios/registro', payload);
+  return data;
+}
+
+export async function verificarUsuario(id: number, dto: any) {
+  const { data } = await api.post(`/usuarios/${id}/verificar`, dto);
+  return data;
+}
+
+export async function reenviarCodigoVerificacion(id: number) {
+  const { data } = await api.post(`/usuarios/${id}/verificacion/reenviar`);
+  return data;
+}
+
+export async function getEstadoVerificacion(id: number) {
+  const { data } = await api.get<VerificacionEstadoResponse>(`/usuarios/${id}/verificacion/estado`);
+  return data;
+}
+
+export async function asignarRolUsuario(id: number, rol: Rol) {
+  return updateUsuarioRol(id, rol);
+}
