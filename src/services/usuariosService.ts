@@ -49,8 +49,12 @@ export async function getMeserosActivos() {
 
 // Compatibilidad - nombres en español usados por archivos antiguos/CI
 export type VerificacionEstadoResponse = {
-  estado: string;
-  enviado_en?: string | null;
+  usuario_id: number;
+  codigo_disponible: boolean;
+  expires_at: string | null;
+  envio_estado: "ENVIADO" | "ERROR" | null;
+  detalle_error: string | null;
+  sent_at: string | null;
 };
 
 export async function registrarUsuario(payload: { nombre: string; apellido?: string; email: string; password: string; password_confirmacion?: string; codigo_registro: string }) {
@@ -58,7 +62,8 @@ export async function registrarUsuario(payload: { nombre: string; apellido?: str
   return data;
 }
 
-export async function verificarUsuario(id: number, dto: any) {
+export async function verificarUsuario(id: number, codigo: string) {
+  const dto = { codigo };
   const { data } = await api.post(`/usuarios/${id}/verificar`, dto);
   return data;
 }
